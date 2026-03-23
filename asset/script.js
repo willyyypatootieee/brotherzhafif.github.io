@@ -64,33 +64,6 @@ async function fetchProfileData() {
 		}
 	}
 }
-// Jalankan fungsinya saat website dibuka
-fetchProfileData();
-
-const totalImages = 13; // Jumlah gambar sertifikat
-const carouselItems = document.getElementById('carouselItems');
-
-carouselItems.innerHTML = '';
-
-// 1. Masukkan gambar dulu ke dalam HTML
-for (let i = 1; i <= totalImages; i++) {
-	const lowResImg = `asset/img/low-res/certificate/${i}.png`;
-	const highResImg = `asset/img/high-res/certificate/${i}.png`;
-
-	const item = `
-        <div class="swiper-slide w-full h-full flex justify-center items-center relative overflow-hidden bg-[#1f202b] rounded-lg">
-            
-            <img src="${lowResImg}" class="absolute w-full h-full object-cover opacity-25 blur-sm" alt="Background">
-            
-            <a href="${highResImg}" class="glightbox z-10 h-full w-full flex justify-center items-center cursor-zoom-in" data-gallery="sertifikat">
-                <img loading="lazy" src="${highResImg}" class="h-full object-contain p-3 transition-transform duration-300 hover:scale-105 drop-shadow-2xl" alt="Certificate ${i} High">
-            </a>
-            
-        </div>
-    `;
-
-	carouselItems.innerHTML += item;
-}
 
 // 2. SETELAH gambar masuk, baru inisialisasi Swiper
 // Ini yang membuat autoplay bisa membaca jumlah gambar dengan benar
@@ -178,7 +151,10 @@ function renderAchievements(posts) {
 		let cardHTML = `
             <div data-aos="${isHighlight ? 'fade-up' : ''}" class="bg-[#11121a] shadow-2xl rounded-lg p-3 relative flex flex-col overflow-hidden group aspect-[4/3] w-full items-center justify-center border border-transparent hover:border-neutral-600 transition-colors">
                 
-                <p class="z-20 relative text-center text-[12px] sm:text-[14px] lg:text-base text-white drop-shadow-md bg-black/60 px-3 py-1 rounded mb-auto mt-2">${post.title}</p>
+                <div class="z-20 relative text-center bg-black/60 px-3 py-1 rounded mb-auto mt-2 drop-shadow-md flex flex-col">
+					<p class="text-[12px] sm:text-[14px] lg:text-base text-white font-semibold">${post.title}</p>
+					${post.year ? `<p class="text-[10px] sm:text-xs text-blue-400 font-mono mt-0.5">${post.year}</p>` : ''}
+				</div>
                 
                 <a href="${highResUrl}" class="glightbox absolute inset-0 z-10 flex justify-center items-center cursor-zoom-in bg-neutral-800 animate-pulse" data-gallery="${galleryId}" data-title="${post.title}">
                     
@@ -244,5 +220,194 @@ function toggleAchievementDrawer() {
 	}
 }
 
-// Panggil fungsinya
-fetchAchievements();	
+// Variable global untuk Swiper Certificate agar tidak bentrok
+let certSwiper;
+
+// Fungsi Mengambil Data Sertifikat
+async function fetchCertificates() {
+	const { data, error } = await supabaseClient
+		.from('posts')
+		.select('*')
+		.eq('type', 'certificate')
+		.order('order_num', { ascending: true })
+		.order('created_at', { ascending: false });
+
+	if (error) {
+		console.error("Gagal mengambil data sertifikat:", error);
+		return;
+	}
+
+	renderCertificates(data);
+}
+
+// Fungsi Render HTML Sertifikat ke Carousel Swiper
+function renderCertificates(posts) {
+	const carouselWrapper = document.getElementById('carouselItems');
+	carouselWrapper.innerHTML = '';
+
+	if (!posts || posts.length === 0) {
+		carouselWrapper.innerHTML = '<div class="w-full flex justify-center mt-10 text-neutral-500">Belum ada sertifikat.</div>';
+		return;
+	}
+
+	posts.forEach((cert) => {
+		const images = cert.images || [];
+		if (images.length === 0) return;
+
+		const highResUrl = images[0];
+		const lastDotIndex = highResUrl.lastIndexOf('.');
+		const lowResUrl = highResUrl.substring(0, lastDotIndex) + '-low.webp';
+
+		const hasMultiple = images.length > 1;
+		const galleryId = `cert-${cert.id}`;
+
+		let slideHTML = `
+            <div class="swiper-slide w-full h-full flex justify-center items-center relative overflow-hidden bg-[#1f202b] rounded-lg group">
+                
+                <img src="${lowResUrl}" class="absolute w-full h-full object-cover opacity-25 blur-sm" alt="Background">
+                
+                <a href="${highResUrl}" class="glightbox absolute inset-0 z-10 flex justify-center items-center cursor-zoom-in bg-neutral-800 animate-pulse" data-gallery="${galleryId}" data-title="${cert.title} - ${cert.year || ''} ${hasMultiple ? '(1/' + images.length + ')' : ''}">
+                    <img src="${lowResUrl}" class="absolute inset-0 w-full h-full object-contain p-3 blur-md transition-all duration-700 ease-in-out z-0 scale-110" onload="this.parentElement.classList.remove('animate-pulse')">
+                    <img src="${highResUrl}" class="absolute inset-0 w-full h-full object-contain p-3 opacity-0 transition-opacity duration-700 ease-in-out z-10 group-hover:scale-105 drop-shadow-2xl" onload="this.classList.remove('opacity-0'); this.previousElementSibling.classList.add('opacity-0');">
+                </a>
+
+                <div class="absolute top-0 left-0 w-full bg-gradient-to-b from-black/90 via-black/60 to-transparent p-4 pb-10 z-20 -translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex flex-col items-center text-center pointer-events-none">
+                    <h3 class="text-white font-semibold text-[10px] sm:text-sm lg:text-base drop-shadow-md">${cert.title}</h3>
+                    ${cert.year ? `<p class="text-blue-400 text-[8px] sm:text-xs font-mono mt-1 drop-shadow-md">${cert.year}</p>` : ''}
+                </div>
+        `;
+
+		// === TAMBAHAN: Indikator Multiple Images & Hidden Links ===
+		if (hasMultiple) {
+			// Indikator angka di pojok kanan atas
+			slideHTML += `
+                <div class="absolute top-3 right-3 z-20 bg-black/80 text-white text-xs px-2 py-1 rounded shadow-lg pointer-events-none flex items-center gap-1 font-mono">
+                    <i class="bi bi-images"></i> ${images.length}
+                </div>
+            `;
+			// Trik GLightbox untuk gambar ke-2 dan seterusnya
+			for (let i = 1; i < images.length; i++) {
+				slideHTML += `<a href="${images[i]}" class="glightbox hidden" data-gallery="${galleryId}" data-title="${cert.title} - ${cert.year || ''} (${i + 1}/${images.length})"></a>`;
+			}
+		}
+
+		slideHTML += `</div>`; // Tutup swiper-slide
+		carouselWrapper.innerHTML += slideHTML;
+	});
+
+	// Inisialisasi Ulang Swiper
+	if (certSwiper) certSwiper.destroy();
+	certSwiper = new Swiper(".mySwiper", {
+		spaceBetween: 30,
+		effect: "slide",
+		loop: true,
+		autoplay: { delay: 3000, disableOnInteraction: false },
+		pagination: { el: ".swiper-pagination", clickable: true },
+		navigation: { nextEl: ".swiper-button-next", prevEl: ".swiper-button-prev" }
+	});
+
+	// Refresh GLightbox
+	if (customLightbox) customLightbox.destroy();
+	customLightbox = GLightbox({
+		selector: '.glightbox',
+		touchNavigation: true,
+		loop: true,
+		zoomable: true
+	});
+}
+
+// Variable Global untuk Swiper Marquee
+let softwareSwiper, creativeSwiper;
+
+// Fungsi Menarik Data Works (Software & Creative)
+async function fetchWorks() {
+	const { data, error } = await supabaseClient
+		.from('posts')
+		.select('*')
+		.in('type', ['software', 'creative'])
+		.order('order_num', { ascending: true })
+		.order('created_at', { ascending: false });
+
+	if (error) {
+		console.error("Gagal mengambil data works:", error);
+		return;
+	}
+
+	const softwareData = data.filter(item => item.type === 'software');
+	const creativeData = data.filter(item => item.type === 'creative');
+
+	renderWorks(softwareData, 'software-items', 'softwareSwiper', '.swiper-software');
+	renderWorks(creativeData, 'creative-items', 'creativeSwiper', '.swiper-creative');
+}
+
+// Fungsi Dinamis Render Works & Marquee
+function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
+	const wrapper = document.getElementById(containerId);
+	wrapper.innerHTML = '';
+
+	if (!posts || posts.length === 0) {
+		wrapper.innerHTML = '<div class="w-full flex justify-center text-neutral-500">Belum ada karya.</div>';
+		return;
+	}
+
+	posts.forEach((post) => {
+		const images = post.images || [];
+		if (images.length === 0) return;
+
+		const highResUrl = images[0];
+		const lastDotIndex = highResUrl.lastIndexOf('.');
+		const lowResUrl = highResUrl.substring(0, lastDotIndex) + '-low.webp';
+
+		const hasMultiple = images.length > 1;
+		const galleryId = `work-${post.id}`;
+
+		let slideHTML = `
+            <div class="swiper-slide w-[280px] sm:w-[360px] lg:w-[400px] aspect-[4/3] flex justify-center items-center relative overflow-hidden bg-[#11121a] shadow-[0_0_20px_black] rounded-lg group mx-2">
+                
+                <img src="${lowResUrl}" class="absolute w-full h-full object-cover opacity-25 blur-sm" alt="Background">
+                
+                <a href="${highResUrl}" class="glightbox absolute inset-0 z-10 flex justify-center items-center cursor-zoom-in bg-neutral-800 animate-pulse" data-gallery="${galleryId}" data-title="${post.title} - ${post.year || ''}">
+                    <img src="${lowResUrl}" class="absolute inset-0 w-full h-full object-contain p-2 blur-md transition-all duration-700 ease-in-out z-0 scale-110" onload="this.parentElement.classList.remove('animate-pulse')">
+                    <img src="${highResUrl}" class="absolute inset-0 w-full h-full object-contain p-2 opacity-0 transition-opacity duration-700 ease-in-out z-10 group-hover:scale-105" onload="this.classList.remove('opacity-0'); this.previousElementSibling.classList.add('opacity-0');">
+                </a>
+
+                <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/90 to-transparent p-4 z-20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex flex-col items-center pointer-events-none text-center">
+                    <p class="text-white text-sm lg:text-base font-semibold drop-shadow">${post.title}</p>
+                    ${post.year ? `<p class="text-blue-400 text-[10px] sm:text-xs font-mono mt-1">${post.year}</p>` : ''}
+                </div>
+        `;
+
+		if (hasMultiple) {
+			slideHTML += `<div class="absolute top-3 right-3 z-20 bg-black/80 text-white text-xs px-2 py-1 rounded shadow-lg pointer-events-none font-mono"><i class="bi bi-images"></i> ${images.length}</div>`;
+			for (let i = 1; i < images.length; i++) {
+				slideHTML += `<a href="${images[i]}" class="glightbox hidden" data-gallery="${galleryId}" data-title="${post.title} (${i + 1}/${images.length})"></a>`;
+			}
+		}
+
+		slideHTML += `</div>`;
+		wrapper.innerHTML += slideHTML;
+	});
+
+	// Nyalakan Swiper Marquee (Berjalan lurus, halus, tanpa henti)
+	if (window[swiperVarName]) window[swiperVarName].destroy();
+	window[swiperVarName] = new Swiper(swiperSelector, {
+		slidesPerView: "auto", // Menyesuaikan lebar kotak
+		spaceBetween: 20,
+		loop: true,
+		speed: 4000, // Kecepatan gerak (Makin besar makin lambat)
+		autoplay: {
+			delay: 0, // Tanpa jeda, langsung jalan
+			disableOnInteraction: false, // Tidak berhenti meski disentuh
+		},
+		allowTouchMove: true, // Bisa digeser manual oleh user
+	});
+
+	// Refresh GLightbox
+	if (customLightbox) customLightbox.destroy();
+	customLightbox = GLightbox({ selector: '.glightbox', touchNavigation: true, loop: true, zoomable: true });
+}
+
+fetchWorks();
+fetchAchievements();
+fetchCertificates();
+fetchProfileData();
