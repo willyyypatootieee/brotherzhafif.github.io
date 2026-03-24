@@ -32,6 +32,23 @@ async function fetchProfileData() {
 		document.getElementById('profile-org').title = data.organization;
 		document.getElementById('profile-desc').innerHTML = data.description;
 
+		// Suntikkan Data Footer Links
+		renderFooterLinks(data.footer_tech_1, 'tech-col-1');
+		renderFooterLinks(data.footer_tech_2, 'tech-col-2');
+		renderFooterLinks(data.footer_thanks, 'thanks-col');
+		renderFooterLinks(data.footer_social, 'social-col');
+
+		// Suntikkan Copyright Otomatis (Mengambil Nama & Alias dari DB)
+		const nameLink = document.getElementById('footer-name-link');
+		const aliasLink = document.getElementById('footer-alias-link');
+		const currentYear = new Date().getFullYear();
+
+		nameLink.innerText = `By ${data.name}`;
+		nameLink.href = `https://www.google.com/search?q=${encodeURIComponent(data.name)}`;
+
+		aliasLink.innerText = `©${currentYear} ${data.alias}`;
+		aliasLink.href = `https://www.google.com/search?q=${encodeURIComponent(data.alias)}`;
+
 		// Logika Progressive Image untuk Profil
 		const highResUrl = data.image_url;
 
@@ -140,46 +157,56 @@ function renderAchievements(posts) {
 		if (images.length === 0) return;
 
 		const highResUrl = images[0];
-
-		// Membentuk URL Low-Res secara dinamis
 		const lastDotIndex = highResUrl.lastIndexOf('.');
 		const lowResUrl = highResUrl.substring(0, lastDotIndex) + '-low.webp';
 
 		const hasMultiple = images.length > 1;
-		const galleryId = `gallery-${post.id}`;
+		const galleryId = `achieve-${post.id}`;
+
+		// Cek apakah file adalah video
+		const isVideoUrl = highResUrl.match(/\.(mp4|webm|ogg)$/i);
 
 		let cardHTML = `
-            <div data-aos="${isHighlight ? 'fade-up' : ''}" class="bg-[#11121a] shadow-2xl rounded-lg p-3 relative flex flex-col overflow-hidden group aspect-[4/3] w-full items-center justify-center border border-transparent hover:border-neutral-600 transition-colors">
+            <div data-aos="${isHighlight ? 'fade-up' : ''}" class="bg-[#11121a] rounded-lg relative overflow-hidden group aspect-[4/3] w-full flex items-center justify-center border border-transparent hover:border-neutral-500 transition-colors shadow-[0_0_20px_rgba(0,0,0,0.5)] cursor-zoom-in">
                 
-                <div class="z-20 relative text-center bg-black/60 px-3 py-1 rounded mb-auto mt-2 drop-shadow-md flex flex-col">
-					<p class="text-[12px] sm:text-[14px] lg:text-base text-white font-semibold">${post.title}</p>
-					${post.year ? `<p class="text-[10px] sm:text-xs text-blue-400 font-mono mt-0.5">${post.year}</p>` : ''}
-				</div>
-                
-                <a href="${highResUrl}" class="glightbox absolute inset-0 z-10 flex justify-center items-center cursor-zoom-in bg-neutral-800 animate-pulse" data-gallery="${galleryId}" data-title="${post.title}">
-                    
-                    <img src="${lowResUrl}" class="absolute inset-0 w-full h-full object-contain p-2 blur-md transition-all duration-700 ease-in-out z-0 scale-110" alt="loading..." onload="this.parentElement.classList.remove('animate-pulse')">
-                    
-                    <img src="${highResUrl}" class="absolute inset-0 w-full h-full object-contain p-2 opacity-0 transition-opacity duration-700 ease-in-out z-10 group-hover:scale-105" alt="${post.title}" onload="this.classList.remove('opacity-0'); this.previousElementSibling.classList.add('opacity-0');">
-                    
-                </a>
-        `;
+                <img src="${lowResUrl}" class="absolute inset-0 w-full h-full object-cover blur-md opacity-40 scale-110 z-0 transition-transform duration-500 group-hover:scale-125" alt="bg">
+                <div class="absolute inset-0 bg-black/50 z-0"></div>
 
-		// Indikator Multiple Images
-		if (hasMultiple) {
-			cardHTML += `
-                <div class="absolute bottom-3 right-3 z-20 bg-black/80 text-white text-xs px-2 py-1 rounded shadow-lg pointer-events-none flex items-center gap-1 font-mono">
+                ${post.year ? `
+                <div class="absolute top-3 left-3 z-30 bg-blue-600/80 backdrop-blur-sm text-white text-[10px] sm:text-xs px-2 py-1 rounded shadow-lg flex items-center gap-1 font-mono border border-blue-400/30">
+                    <i class="bi bi-calendar-event"></i> ${post.year}
+                </div>
+                ` : ''}
+
+                ${hasMultiple ? `
+                <div class="absolute top-3 right-3 z-30 bg-black/80 text-white text-[10px] sm:text-xs px-2 py-1 rounded shadow-lg flex items-center gap-1 font-mono border border-neutral-600">
                     <i class="bi bi-images"></i> ${images.length}
                 </div>
-            `;
-			// Trik GLightbox untuk multi-gambar (high-res semua)
+                ` : ''}
+
+                <a href="${highResUrl}" class="glightbox relative z-20 h-[calc(100%-10px)] my-[5px] aspect-[5/3] group-hover:scale-105 transition-transform duration-300 shadow-[0_15px_40px_rgba(0,0,0,0.9)] rounded-md overflow-hidden bg-neutral-800 animate-pulse flex justify-center items-center" data-gallery="${galleryId}" data-title="${post.title} - ${post.year || ''}">
+                    
+                    ${isVideoUrl ? `<i class="bi bi-play-circle text-4xl text-white/80 absolute z-30 drop-shadow-lg group-hover:scale-110 transition-transform"></i>` : ''}
+                    
+                    <img src="${lowResUrl}" class="absolute inset-0 w-full h-full object-cover blur-sm z-10" onload="this.parentElement.classList.remove('animate-pulse')">
+                    <img src="${highResUrl}" class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-700 z-20" onload="this.classList.remove('opacity-0'); this.previousElementSibling.classList.add('opacity-0');">
+                </a>
+
+                <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/90 via-black/70 to-transparent p-4 pt-16 z-30 flex flex-col items-center text-center pointer-events-none">
+                    <p class="text-[12px] sm:text-[14px] lg:text-base text-white font-semibold drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">${post.title}</p>
+                </div>
+        `;
+
+		// Trik GLightbox untuk gambar ke-2 dan seterusnya
+		if (hasMultiple) {
 			for (let i = 1; i < images.length; i++) {
-				cardHTML += `<a href="${images[i]}" class="glightbox hidden" data-gallery="${galleryId}" data-title="${post.title} (${i + 1}/${images.length})"></a>`;
+				cardHTML += `<a href="${images[i]}" class="glightbox hidden" data-gallery="${galleryId}" data-title="${post.title} - ${post.year || ''} (${i + 1}/${images.length})"></a>`;
 			}
 		}
 
 		cardHTML += `</div>`;
 
+		// Masukkan ke container yang tepat (Highlight atau Laci)
 		if (isHighlight) {
 			highlightContainer.innerHTML += cardHTML;
 		} else {
@@ -261,59 +288,63 @@ function renderCertificates(posts) {
 		const hasMultiple = images.length > 1;
 		const galleryId = `cert-${cert.id}`;
 
+		// Cek apakah file adalah video (jarang di sertifikat, tapi buat jaga-jaga)
+		const isVideoUrl = highResUrl.match(/\.(mp4|webm|ogg)$/i);
+
 		let slideHTML = `
-            <div class="swiper-slide w-full h-full flex justify-center items-center relative overflow-hidden bg-[#1f202b] rounded-lg group">
+            <div class="swiper-slide w-full h-full flex justify-center items-center relative overflow-hidden bg-[#1f202b] rounded-lg group cursor-zoom-in">
                 
-                <img src="${lowResUrl}" class="absolute w-full h-full object-cover opacity-25 blur-sm" alt="Background">
-                
-                <a href="${highResUrl}" class="glightbox absolute inset-0 z-10 flex justify-center items-center cursor-zoom-in bg-neutral-800 animate-pulse" data-gallery="${galleryId}" data-title="${cert.title} - ${cert.year || ''} ${hasMultiple ? '(1/' + images.length + ')' : ''}">
-                    <img src="${lowResUrl}" class="absolute inset-0 w-full h-full object-contain p-3 blur-md transition-all duration-700 ease-in-out z-0 scale-110" onload="this.parentElement.classList.remove('animate-pulse')">
-                    <img src="${highResUrl}" class="absolute inset-0 w-full h-full object-contain p-3 opacity-0 transition-opacity duration-700 ease-in-out z-10 group-hover:scale-105 drop-shadow-2xl" onload="this.classList.remove('opacity-0'); this.previousElementSibling.classList.add('opacity-0');">
+                <img src="${lowResUrl}" class="absolute inset-0 w-full h-full object-cover blur-md opacity-40 scale-110 z-0 transition-transform duration-500 group-hover:scale-125" alt="bg">
+                <div class="absolute inset-0 bg-black/50 z-0"></div>
+
+                ${cert.year ? `
+                <div class="absolute top-3 left-3 z-50 bg-blue-600/80 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded shadow-lg flex items-center gap-1 font-mono border border-blue-400/30">
+                    <i class="bi bi-calendar-event"></i> ${cert.year}
+                </div>
+                ` : ''}
+
+                <a href="${highResUrl}" class="glightbox absolute inset-0 z-10 flex justify-center items-center group-hover:scale-105 transition-transform duration-300" data-gallery="${galleryId}" data-title="${cert.title} - ${cert.year || ''} ${hasMultiple ? '(1/' + images.length + ')' : ''}">
+                    
+                    ${isVideoUrl ? `<i class="bi bi-play-circle text-5xl text-white/80 absolute z-30 drop-shadow-[0_0_15px_rgba(0,0,0,0.9)]"></i>` : ''}
+                    
+                    <img src="${lowResUrl}" class="absolute w-full h-full object-contain blur-md z-10 p-6 sm:p-10 drop-shadow-[0_15px_40px_rgba(0,0,0,0.9)]">
+                    <img src="${highResUrl}" class="absolute w-full h-full object-contain opacity-0 transition-opacity duration-700 z-20 p-6 sm:p-10 drop-shadow-[0_15px_40px_rgba(0,0,0,0.9)]" onload="this.classList.remove('opacity-0'); this.previousElementSibling.classList.add('opacity-0');">
                 </a>
 
-                <div class="absolute top-0 left-0 w-full bg-gradient-to-b from-black/90 via-black/60 to-transparent p-4 pb-10 z-20 -translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex flex-col items-center text-center pointer-events-none">
+                ${hasMultiple ? `
+                <div class="absolute top-3 right-3 z-50 bg-black/80 text-white text-[10px] px-2 py-1 rounded shadow-lg flex items-center gap-1 font-mono border border-neutral-600">
+                    <i class="bi bi-images"></i> ${images.length}
+                </div>
+                ` : ''}
+
+                <div class="absolute top-0 left-0 w-full bg-gradient-to-b from-black/90 via-black/60 to-transparent p-4 pb-12 z-40 -translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex flex-col items-center text-center pointer-events-none">
                     <h3 class="text-white font-semibold text-[10px] sm:text-sm lg:text-base drop-shadow-md">${cert.title}</h3>
-                    ${cert.year ? `<p class="text-blue-400 text-[8px] sm:text-xs font-mono mt-1 drop-shadow-md">${cert.year}</p>` : ''}
                 </div>
         `;
 
-		// === TAMBAHAN: Indikator Multiple Images & Hidden Links ===
 		if (hasMultiple) {
-			// Indikator angka di pojok kanan atas
-			slideHTML += `
-                <div class="absolute top-3 right-3 z-20 bg-black/80 text-white text-xs px-2 py-1 rounded shadow-lg pointer-events-none flex items-center gap-1 font-mono">
-                    <i class="bi bi-images"></i> ${images.length}
-                </div>
-            `;
-			// Trik GLightbox untuk gambar ke-2 dan seterusnya
 			for (let i = 1; i < images.length; i++) {
 				slideHTML += `<a href="${images[i]}" class="glightbox hidden" data-gallery="${galleryId}" data-title="${cert.title} - ${cert.year || ''} (${i + 1}/${images.length})"></a>`;
 			}
 		}
 
-		slideHTML += `</div>`; // Tutup swiper-slide
+		slideHTML += `</div>`;
 		carouselWrapper.innerHTML += slideHTML;
 	});
 
-	// Inisialisasi Ulang Swiper
+	// Inisialisasi Ulang Swiper (Gak ada ubahan di sini)
 	if (certSwiper) certSwiper.destroy();
 	certSwiper = new Swiper(".mySwiper", {
 		spaceBetween: 30,
 		effect: "slide",
 		loop: true,
-		autoplay: { delay: 3000, disableOnInteraction: false },
+		autoplay: { delay: 10000, disableOnInteraction: false },
 		pagination: { el: ".swiper-pagination", clickable: true },
 		navigation: { nextEl: ".swiper-button-next", prevEl: ".swiper-button-prev" }
 	});
 
-	// Refresh GLightbox
 	if (customLightbox) customLightbox.destroy();
-	customLightbox = GLightbox({
-		selector: '.glightbox',
-		touchNavigation: true,
-		loop: true,
-		zoomable: true
-	});
+	customLightbox = GLightbox({ selector: '.glightbox', touchNavigation: true, loop: true, zoomable: true });
 }
 
 // Variable Global untuk Swiper Marquee
@@ -340,7 +371,7 @@ async function fetchWorks() {
 	renderWorks(creativeData, 'creative-items', 'creativeSwiper', '.swiper-creative');
 }
 
-// Fungsi Dinamis Render Works & Marquee
+// Fungsi Dinamis Render Works (Software & Creative) dengan Spotify Effect
 function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
 	const wrapper = document.getElementById(containerId);
 	wrapper.innerHTML = '';
@@ -361,24 +392,41 @@ function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
 		const hasMultiple = images.length > 1;
 		const galleryId = `work-${post.id}`;
 
+		// Cek apakah file adalah video
+		const isVideoUrl = highResUrl.match(/\.(mp4|webm|ogg)$/i);
+
 		let slideHTML = `
-            <div class="swiper-slide w-[280px] sm:w-[360px] lg:w-[400px] aspect-[4/3] flex justify-center items-center relative overflow-hidden bg-[#11121a] shadow-[0_0_20px_black] rounded-lg group mx-2">
+            <div class="swiper-slide w-[280px] sm:w-[360px] lg:w-[400px] aspect-[4/3] flex justify-center items-center relative overflow-hidden bg-[#11121a] shadow-[0_0_20px_black] rounded-lg group mx-2 cursor-zoom-in">
                 
-                <img src="${lowResUrl}" class="absolute w-full h-full object-cover opacity-25 blur-sm" alt="Background">
+                <img src="${lowResUrl}" class="absolute inset-0 w-full h-full object-cover blur-md opacity-40 scale-110 z-0 transition-transform duration-500 group-hover:scale-125" alt="bg">
+                <div class="absolute inset-0 bg-black/50 z-0"></div>
                 
-                <a href="${highResUrl}" class="glightbox absolute inset-0 z-10 flex justify-center items-center cursor-zoom-in bg-neutral-800 animate-pulse" data-gallery="${galleryId}" data-title="${post.title} - ${post.year || ''}">
-                    <img src="${lowResUrl}" class="absolute inset-0 w-full h-full object-contain p-2 blur-md transition-all duration-700 ease-in-out z-0 scale-110" onload="this.parentElement.classList.remove('animate-pulse')">
-                    <img src="${highResUrl}" class="absolute inset-0 w-full h-full object-contain p-2 opacity-0 transition-opacity duration-700 ease-in-out z-10 group-hover:scale-105" onload="this.classList.remove('opacity-0'); this.previousElementSibling.classList.add('opacity-0');">
+                ${post.year ? `
+                <div class="absolute bottom-3 left-3 z-30 bg-blue-600/80 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded shadow-lg flex items-center gap-1 font-mono border border-blue-400/30">
+                    <i class="bi bi-calendar-event"></i> ${post.year}
+                </div>
+                ` : ''}
+
+                <a href="${highResUrl}" class="glightbox absolute inset-0 z-10 flex justify-center items-center group-hover:scale-105 transition-transform duration-300" data-gallery="${galleryId}" data-title="${post.title} - ${post.year || ''}">
+                    
+                    ${isVideoUrl ? `<i class="bi bi-play-circle text-4xl text-white/80 absolute z-30 drop-shadow-[0_0_15px_rgba(0,0,0,0.9)]"></i>` : ''}
+                    
+                    <img src="${lowResUrl}" class="absolute w-full h-full object-contain blur-md z-10 p-5 sm:p-8 drop-shadow-[0_15px_40px_rgba(0,0,0,0.9)]">
+                    <img src="${highResUrl}" class="absolute w-full h-full object-contain opacity-0 transition-opacity duration-700 z-20 p-2 sm:p-5 drop-shadow-[0_15px_40px_rgba(0,0,0,0.9)]" onload="this.classList.remove('opacity-0'); this.previousElementSibling.classList.add('opacity-0');">
                 </a>
 
-                <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/90 to-transparent p-4 z-20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex flex-col items-center pointer-events-none text-center">
-                    <p class="text-white text-sm lg:text-base font-semibold drop-shadow">${post.title}</p>
-                    ${post.year ? `<p class="text-blue-400 text-[10px] sm:text-xs font-mono mt-1">${post.year}</p>` : ''}
+                ${hasMultiple ? `
+                <div class="absolute top-3 right-3 z-30 bg-black/80 text-white text-[10px] px-2 py-1 rounded shadow-lg flex items-center gap-1 font-mono border border-neutral-600">
+                    <i class="bi bi-images"></i> ${images.length}
+                </div>
+                ` : ''}
+
+                <div class="absolute top-0 left-0 w-full bg-gradient-to-b from-black/90 via-black/60 to-transparent p-4 pb-12 z-40 -translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex flex-col items-center pointer-events-none text-center">
+                    <p class="text-white text-sm lg:text-base font-semibold drop-shadow-md">${post.title}</p>
                 </div>
         `;
 
 		if (hasMultiple) {
-			slideHTML += `<div class="absolute top-3 right-3 z-20 bg-black/80 text-white text-xs px-2 py-1 rounded shadow-lg pointer-events-none font-mono"><i class="bi bi-images"></i> ${images.length}</div>`;
 			for (let i = 1; i < images.length; i++) {
 				slideHTML += `<a href="${images[i]}" class="glightbox hidden" data-gallery="${galleryId}" data-title="${post.title} (${i + 1}/${images.length})"></a>`;
 			}
@@ -388,23 +436,37 @@ function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
 		wrapper.innerHTML += slideHTML;
 	});
 
-	// Nyalakan Swiper Marquee (Berjalan lurus, halus, tanpa henti)
+	// Inisialisasi Ulang Marquee (Gak ada ubahan di sini)
 	if (window[swiperVarName]) window[swiperVarName].destroy();
 	window[swiperVarName] = new Swiper(swiperSelector, {
-		slidesPerView: "auto", // Menyesuaikan lebar kotak
+		slidesPerView: "auto",
 		spaceBetween: 20,
 		loop: true,
-		speed: 4000, // Kecepatan gerak (Makin besar makin lambat)
-		autoplay: {
-			delay: 0, // Tanpa jeda, langsung jalan
-			disableOnInteraction: false, // Tidak berhenti meski disentuh
-		},
-		allowTouchMove: true, // Bisa digeser manual oleh user
+		speed: 4000,
+		autoplay: { delay: 0, disableOnInteraction: false },
+		allowTouchMove: true,
 	});
 
-	// Refresh GLightbox
 	if (customLightbox) customLightbox.destroy();
 	customLightbox = GLightbox({ selector: '.glightbox', touchNavigation: true, loop: true, zoomable: true });
+}
+
+// Helper: Ubah teks "Nama | URL" menjadi tag <a> HTML
+function renderFooterLinks(textData, containerId) {
+	const container = document.getElementById(containerId);
+	if (!container || !textData) return;
+
+	container.innerHTML = '';
+	const lines = textData.split('\n'); // Pisahkan per baris (Enter)
+
+	lines.forEach(line => {
+		const parts = line.split('|'); // Pisahkan nama dan link dengan pemisah "|"
+		if (parts.length >= 2) {
+			const name = parts[0].trim();
+			const url = parts.slice(1).join('|').trim(); // Antisipasi kalau URL-nya mengandung karakter |
+			container.innerHTML += `<a class="text-[10px] sm:text-[12px] lg:text-base text-white/50 hover:text-white transition-colors" href="${url}" target="_blank">${name}</a>`;
+		}
+	});
 }
 
 fetchWorks();
