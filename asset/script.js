@@ -1,4 +1,85 @@
 // ==========================================
+// LOGIKA SMART NAVBAR (CONTEXTUAL APPEARANCE)
+// ==========================================
+
+const initSmartNavbar = () => {
+	const nav = document.getElementById('main-nav');
+	const achievementSection = document.getElementById('Achievement');
+
+	if (!nav || !achievementSection) return;
+
+	window.addEventListener('scroll', () => {
+		// Ambil posisi section Achievement relatif terhadap layar
+		const sectionPos = achievementSection.getBoundingClientRect();
+
+		// LOGIKA: Muncul jika Achievement menyentuh TOP (<= 0)
+		if (sectionPos.top <= 0) {
+			if (nav.classList.contains('nav-hidden')) {
+				// Hapus class pembatas
+				nav.classList.remove('nav-hidden', 'opacity-0');
+
+				// Animasi Masuk (Slide Down)
+				anime.remove(nav); // Bersihkan sisa animasi lama
+				anime({
+					targets: nav,
+					translateY: [-100, 0],
+					opacity: [0, 1],
+					duration: 800,
+					easing: 'easeOutExpo'
+				});
+			}
+		} else {
+			// LOGIKA: Sembunyi jika scroll balik ke atas Achievement
+			if (!nav.classList.contains('nav-hidden')) {
+				anime.remove(nav);
+				anime({
+					targets: nav,
+					translateY: -100,
+					opacity: 0,
+					duration: 600,
+					easing: 'easeInExpo',
+					complete: () => {
+						nav.classList.add('nav-hidden', 'opacity-0');
+					}
+				});
+			}
+		}
+	});
+};
+
+// Toggle Menu Mobile
+const toggleMobileMenu = () => {
+	const menu = document.getElementById('mobile-menu');
+	const icon = document.getElementById('menu-icon');
+	const isHidden = menu.classList.contains('hidden');
+
+	if (isHidden) {
+		menu.classList.remove('hidden');
+		anime({
+			targets: '#mobile-menu',
+			opacity: [0, 1],
+			translateY: [-20, 0],
+			duration: 400,
+			easing: 'easeOutCubic'
+		});
+		icon.className = 'bi bi-x-lg';
+	} else {
+		anime({
+			targets: '#mobile-menu',
+			opacity: 0,
+			translateY: -20,
+			duration: 300,
+			easing: 'easeInCubic',
+			complete: () => menu.classList.add('hidden')
+		});
+		icon.className = 'bi bi-grid-3x3-gap-fill';
+	}
+};
+
+// Panggil fungsi inisialisasi
+document.addEventListener('DOMContentLoaded', initSmartNavbar);
+
+// ==========================================
 // ANIMASI LOADER MINIMALIS (ANIME.JS)
 // ==========================================
 
@@ -23,10 +104,6 @@ anime({
 	easing: 'easeInOutSine'
 });
 
-// ==========================================
-// MESIN ANIMASI SCROLL CUSTOM (ANIME.JS) - FLIP DENGAN PENGECUALIAN
-// ==========================================
-
 // Detektor Arah Scroll
 let lastScrollTop = window.scrollY || document.documentElement.scrollTop;
 let isScrollingDown = true;
@@ -40,53 +117,68 @@ window.addEventListener('scroll', () => {
 // Detect if device is likely to struggle with animations
 const isLowEndMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
+// ==========================================
+// MESIN ANIMASI SCROLL ANTI-FLICKER (SIGMA VERSION)
+// ==========================================
+
 const scrollObserver = new IntersectionObserver((entries) => {
 	entries.forEach(entry => {
 		const el = entry.target;
+
+		// Cek apakah elemen sudah punya status (biar gak bentrok)
+		const currentState = el.dataset.animState;
+
 		const animType = el.getAttribute('data-anime');
 		const delay = el.getAttribute('data-anime-delay') || 0;
-
-		// CEK PENGECUALIAN: Apakah elemen ini punya atribut anti-flip?
 		const noFlip = el.hasAttribute('data-anime-no-flip');
+		const dirMultiplier = (isScrollingDown || noFlip || isLowEndMobile) ? 1 : -1;
 
-		// KUNCI: Kalau noFlip ada, multiplier SELALU 1 (normal). Kalau gak ada, ikuti arah scroll.
-		const dirMultiplier = (isScrollingDown || noFlip) ? 1 : -1;
-
-		let startY = 0;
-		let startX = 0;
-		let startScale = 1;
-
+		let startY = 0, startX = 0, startScale = 1;
 		if (animType === 'fade-up') startY = 50 * dirMultiplier;
 		if (animType === 'fade-right') startX = -50 * dirMultiplier;
 		if (animType === 'fade-left') startX = 50 * dirMultiplier;
 		if (animType === 'zoom-in') startScale = 0.8;
 
 		if (entry.isIntersecting) {
+			// JALANKAN HANYA JIKA statusnya bukan 'entering'
+			if (currentState === 'entering') return;
+
+			el.dataset.animState = 'entering'; // Tandai sedang masuk
 			anime.remove(el);
 
-			// GUNANYA DI SINI:
-			// Jika HP, durasi dicepetin jadi 200ms & startY jadi 0 biar gak berat ngerender gerak
-			const finalDuration = isLowEndMobile ? 200 : 1000;
-			const mobileY = isLowEndMobile ? 0 : startY;
-			const mobileX = isLowEndMobile ? 0 : startX;
-
-			// ANIMASI MUNCUL
 			anime({
 				targets: el,
 				opacity: [0, 1],
-				translateY: [mobileY, 0], // Jadi 0 kalau di HP
-				translateX: [mobileX, 0], // Jadi 0 kalau di HP
+				translateY: [startY, 0],
+				translateX: [startX, 0],
 				scale: [startScale, 1],
-				duration: finalDuration, // Jadi instan/cepet kalau di HP
-				delay: parseInt(delay),
+				duration: isLowEndMobile ? 400 : 1000,
+				delay: isLowEndMobile ? 0 : parseInt(delay),
 				easing: 'easeOutCubic'
+			});
+		} else {
+			// JALANKAN HANYA JIKA statusnya bukan 'leaving'
+			// Dan pastikan elemen memang sudah pernah masuk sebelumnya (biar gak flicker pas load)
+			if (currentState === 'leaving' || !currentState) return;
+
+			el.dataset.animState = 'leaving'; // Tandai sedang keluar
+			anime.remove(el);
+
+			anime({
+				targets: el,
+				opacity: 0,
+				translateY: startY,
+				translateX: startX,
+				scale: startScale,
+				duration: 500,
+				easing: 'easeInCubic'
 			});
 		}
 	});
 }, {
 	root: null,
-	rootMargin: '0px',
-	threshold: 0.15
+	rootMargin: '10px 0px', // Kasih ruang napas sedikit
+	threshold: 0.1 // Jangan 0, kasih 10% biar lebih stabil
 });
 
 // Fungsi inisialisasi (Panggil ini di tiap render data dinamis!)
@@ -366,24 +458,65 @@ function renderAchievements(posts) {
 	initAnimeScroll();
 }
 
-// Fungsi Buka Tutup Laci
+// ==========================================
+// FUNGSI LACI ANTI-TABRAKAN AOS
+// ==========================================
 function toggleAchievementDrawer() {
 	const drawer = document.getElementById('achievement-drawer');
 	const btn = document.getElementById('btn-show-more-achievements');
 
-	if (drawer.classList.contains('hidden')) {
-		// Buka laci
+	// STOP SEMUA ANIMASI YANG SEDANG BERJALAN PADA DRAWER
+	anime.remove(drawer);
+
+	const isClosed = drawer.classList.contains('hidden') || drawer.offsetHeight === 0;
+
+	if (isClosed) {
+		// --- ACTION: BUKA ---
 		drawer.classList.remove('hidden');
+		const fullHeight = drawer.scrollHeight;
+
+		anime({
+			targets: drawer,
+			height: [0, fullHeight],
+			opacity: [0, 1],
+			duration: 800,
+			easing: 'easeOutQuart',
+			begin: () => {
+				// Pastikan sensor AOS tidak mengganggu saat proses buka
+				drawer.style.pointerEvents = 'none';
+			},
+			complete: () => {
+				drawer.style.height = 'auto';
+				drawer.style.pointerEvents = 'auto';
+				// Trigger ulang AOS buat konten di dalam yang baru muncul
+				initAnimeScroll();
+			}
+		});
+
 		btn.innerHTML = 'Show Less <i class="bi bi-chevron-up ml-1"></i>';
+
 	} else {
-		// Tutup laci
-		drawer.classList.add('hidden');
+		// --- ACTION: TUTUP ---
+		anime({
+			targets: drawer,
+			height: 0,
+			opacity: 0,
+			duration: 600,
+			easing: 'easeInQuart',
+			complete: () => {
+				drawer.classList.add('hidden');
+			}
+		});
+
 		btn.innerHTML = 'Show More <i class="bi bi-chevron-down ml-1"></i>';
-		// Auto scroll layar balik ke atas Achievement biar gak tersesat
-		document.getElementById('Achievement').scrollIntoView({ behavior: 'smooth' });
+
+		// Scroll balik dengan delay agar tidak kaget
+		setTimeout(() => {
+			const section = document.getElementById('Achievement');
+			if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+		}, 200);
 	}
 }
-
 // Variable global untuk Swiper Certificate agar tidak bentrok
 let certSwiper;
 

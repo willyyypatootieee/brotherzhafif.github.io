@@ -16,6 +16,40 @@
 </head>
 
 <body class="overflow-x-hidden w-full text-white bg-[#333445]">
+
+    <nav id="main-nav" class="fixed top-0 left-0 w-full z-[100] py-4 px-6 pointer-events-none nav-hidden transition-all duration-500 opacity-0">
+        <div class="max-w-6xl mx-auto flex items-center justify-between bg-[#1e1f2b]/90 backdrop-blur-xl border border-white/10 px-6 py-3 rounded-2xl pointer-events-auto shadow-2xl">
+            
+            <a href="#" class="text-white font-bold tracking-tighter text-xl">
+                BrotherZhafif<span class="text-blue-500">.</span>
+            </a>
+
+            <div class="hidden md:flex items-center gap-8 font-mono text-[11px] uppercase tracking-widest">
+                <a href="#Technology" class="nav-link text-gray-400 hover:text-white transition-colors">Technology</a>
+                <a href="#Achievement" class="nav-link text-gray-400 hover:text-white transition-colors">Achievements</a>
+                <a href="#Certificates" class="nav-link text-gray-400 hover:text-white transition-colors">Certificates</a>
+                <a href="#Software" class="nav-link text-gray-400 hover:text-white transition-colors">Software</a>
+                <a href="#Creative" class="nav-link text-gray-400 hover:text-white transition-colors">Creative</a>
+                <a href="#Contact" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-bold transition-all transform hover:scale-105">Contact</a>
+            </div>
+
+            <button onclick="toggleMobileMenu()" class="md:hidden text-white text-2xl">
+                <i id="menu-icon" class="bi bi-grid-3x3-gap-fill"></i>
+            </button>
+        </div>
+
+        <div id="mobile-menu" class="absolute top-full left-6 right-6 mt-4 bg-[#333445]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hidden opacity-0 translate-y-[-20px] transition-all duration-300 pointer-events-auto shadow-2xl">
+            <div class="flex flex-col gap-6 text-center font-mono text-sm">
+                <a href="#Technology" onclick="toggleMobileMenu()" class="text-gray-300">Technology</a>
+                <a href="#Achievement" onclick="toggleMobileMenu()" class="text-gray-300">Achievements</a>
+                <a href="#Certificates" onclick="toggleMobileMenu()" class="text-gray-300">Certificates</a>
+                <a href="#Software" onclick="toggleMobileMenu()" class="text-gray-300">Software</a>
+                <a href="#Creative" onclick="toggleMobileMenu()" class="text-gray-300">Creative</a>
+                <a href="#Contact" onclick="toggleMobileMenu()" class="text-blue-400 font-bold">Contact Me</a>
+            </div>
+        </div>
+    </nav>
+
     <div id="global-loader" class="fixed inset-0 z-[999] bg-[#333445] flex flex-col items-center justify-center transition-opacity duration-700 ease-in-out" style="perspective: 800px;">
         
         <div class="cube-wrapper w-16 h-16 relative mb-12" style="transform-style: preserve-3d;">
@@ -117,7 +151,7 @@
                             Show More <i class="bi bi-chevron-down ml-1"></i>
                         </button>
 
-                        <div id="achievement-drawer" class="hidden w-full max-w-6xl mt-8 border-t border-neutral-700 pt-8 transition-all duration-500">
+                        <div id="achievement-drawer" class="hidden w-full max-w-6xl mt-8 border-t border-neutral-700 pt-8 transition-all duration-500" style="height: 0;">
                             <div class="overflow-y-auto max-h-[60vh] pr-2 drawer-scroll">
                                 <div id="achievement-grid-all" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                     </div>
@@ -125,12 +159,18 @@
                         </div>
                     </div>
 
-                    <div class="w-full my-8">
-                        <hr class="border-white/20">
-                    </div>
+                    <br><br><br><br>
 
-                    <div data-anime="fade-up" class="flex flex-col text-base w-full">
+                    <div id="Certificates" data-anime="fade-up" class="flex flex-col text-base w-full text-center items-center">
+                        <p class="text-lg md:text-3xl lg:text-4xl font-light">Certificate</p>
+                        <p class="text-[10px] md:text-base text-white/50">My Certificates I Get as Student Activity</p>
+
+                        <div class="w-full my-8">
+                            <hr class="border-white/20">
+                        </div>
+
 						<div class="mb-12 text-center w-full flex justify-center items-center p-2 lg:p-4">
+                            
 							<div class="swiper mySwiper w-full h-[480px] rounded-lg overflow-hidden relative">
     
                             <div class="swiper-wrapper" id="carouselItems"></div>
@@ -155,7 +195,7 @@
 
             <div data-anime="fade-up" id="Works" class="text-white flex flex-col items-center">
 
-                <div data-anime="fade-up" class="m-12 w-full">
+                <div id="Software" data-anime="fade-up" class="m-12 w-full">
                     <div class="text-center mb-8">
                         <p class="text-lg md:text-3xl lg:text-4xl font-light">Software Creation</p>
                         <p class="text-[10px] md:text-base text-white/50">Some Software I Develop For Learning And Competition Purpose</p>
@@ -175,7 +215,7 @@
                     <hr class="border-white/20">
                 </div>
 
-                <div data-anime="fade-up" class="m-12 w-full">
+                <div id="Creative" data-anime="fade-up" class="m-12 w-full">
                     <div class="text-center mb-8">
                         <p class="text-lg md:text-3xl lg:text-4xl font-light">Creative Creation</p>
                         <p class="text-[10px] md:text-base text-white/50">My Arts And Animations I Make For Fun As A Hobby In Free Time</p>
@@ -191,6 +231,45 @@
                     </div>
                 </div>
             </div>
+
+            <section id="Contact" class="py-16 px-6 bg-[#333445]">
+                <div class="max-w-5xl mx-auto">
+                    
+                    <div data-anime="fade-up" class="relative overflow-hidden bg-white/5 border border-white/10 rounded-3xl p-8 md:p-12 shadow-2xl">
+                        
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-3xl rounded-full -mr-16 -mt-16"></div>
+                        
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
+                            
+                            <div class="text-left">
+                                <h2 class="text-2xl md:text-3xl font-bold text-white mb-4 tracking-tight">
+                                    Ready to <span class="text-blue-400">Collaborate?</span>
+                                </h2>
+                                <p class="text-gray-400 leading-relaxed mb-0">
+                                    Punya ide proyek robotika atau butuh bantuan software development? 
+                                    Langsung gas aja, kita diskusikan lewat email atau sosial media.
+                                </p>
+                            </div>
+
+                            <div class="flex flex-col sm:flex-row gap-4 lg:justify-end">
+                                
+                                <a href="mailto:bangz1504@gmail.com" 
+                                class="flex items-center justify-center gap-3 px-6 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl transition-all duration-300 transform hover:-translate-y-1 shadow-lg shadow-blue-900/20 font-medium">
+                                    <i class="bi bi-envelope-fill"></i>
+                                    <span>Email Me</span>
+                                </a>
+
+                                <a href="https://www.instagram.com/brotherzhafif/" target="_blank"
+                                class="flex items-center justify-center gap-3 px-6 py-4 bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-2xl transition-all duration-300 transform hover:-translate-y-1 font-medium">
+                                    <i class="bi bi-instagram text-pink-500"></i>
+                                    <span>Instagram</span>
+                                </a>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
             <div data-anime="fade-up" id="Technology" class="bg-[#1f202b] shadow-[0_0_50px_black] text-white flex flex-col items-center z-30 relative aos-init aos-animate">
 
@@ -228,7 +307,6 @@
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 

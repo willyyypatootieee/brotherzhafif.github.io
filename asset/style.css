@@ -1,3 +1,10 @@
+#achievement-drawer {
+    transition: none !important;
+    /* Biar cuma Anime.js yang pegang kendali */
+    will-change: height, opacity;
+    /* Optimasi hardware acceleration di HP */
+}
+
 /* Class penyelamat jika sistem animasi dimatikan */
 .no-anime [data-anime] {
     opacity: 1 !important;
@@ -123,4 +130,31 @@ body {
     /* Mengizinkan scroll vertikal halaman tapi swipe horizontal swiper */
     user-select: none;
     /* Biar gak gak sengaja ke-select teksnya pas nge-swipe */
+}
+
+/* Navbar awal: Sembunyi 100% di atas layar */
+.nav-hidden {
+    transform: translateY(-100%);
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Link Hover Effect */
+.nav-link {
+    position: relative;
+}
+
+.nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    width: 0;
+    height: 1.5px;
+    background: #3b82f6;
+    transition: width 0.3s ease;
+}
+
+.nav-link:hover::after {
+    width: 100%;
 }
