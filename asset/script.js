@@ -37,8 +37,33 @@ window.addEventListener('scroll', () => {
 	lastScrollTop = currentScroll <= 0 ? 0 : currentScroll;
 }, false);
 
+// Detect if device is likely to struggle with animations
+const isLowEndMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
 const scrollObserver = new IntersectionObserver((entries) => {
 	entries.forEach(entry => {
+
+		if (entry.isIntersecting) {
+			anime.remove(el);
+
+			// GUNANYA DI SINI:
+			// Jika HP, durasi dicepetin jadi 200ms & startY jadi 0 biar gak berat ngerender gerak
+			const finalDuration = isLowEndMobile ? 200 : 1000;
+			const mobileY = isLowEndMobile ? 0 : startY;
+			const mobileX = isLowEndMobile ? 0 : startX;
+
+			// ANIMASI MUNCUL
+			anime({
+				targets: el,
+				opacity: [0, 1],
+				translateY: [mobileY, 0], // Jadi 0 kalau di HP
+				translateX: [mobileX, 0], // Jadi 0 kalau di HP
+				scale: [startScale, 1],
+				duration: finalDuration, // Jadi instan/cepet kalau di HP
+				delay: parseInt(delay),
+				easing: 'easeOutCubic'
+			});
+		}
 		const el = entry.target;
 		const animType = el.getAttribute('data-anime');
 		const delay = el.getAttribute('data-anime-delay') || 0;
@@ -68,7 +93,7 @@ const scrollObserver = new IntersectionObserver((entries) => {
 				translateY: [startY, 0],
 				translateX: [startX, 0],
 				scale: [startScale, 1],
-				duration: 800,
+				duration: 1000,
 				delay: parseInt(delay),
 				easing: 'easeOutCubic'
 			});
@@ -90,10 +115,10 @@ const scrollObserver = new IntersectionObserver((entries) => {
 }, {
 	root: null,
 	rootMargin: '0px',
-	threshold: 0.15
+	threshold: 0.1
 });
 
-// Fungsi untuk memasang sensor ke elemen (Tetap sama)
+// Fungsi inisialisasi (Panggil ini di tiap render data dinamis!)
 function initAnimeScroll() {
 	document.querySelectorAll('[data-anime]').forEach(el => {
 		if (!el.classList.contains('is-observed')) {
@@ -101,6 +126,17 @@ function initAnimeScroll() {
 			el.classList.add('is-observed');
 		}
 	});
+}
+
+// Fungsi Fallback: Jika dalam 3 detik loading selesai tapi animasi gak jalan, paksa muncul semua
+function safetyNet() {
+	setTimeout(() => {
+		const firstElement = document.querySelector('[data-anime]');
+		if (firstElement && window.getComputedStyle(firstElement).opacity === "0") {
+			console.warn("Animation system failed or too slow. Activating fallback...");
+			document.body.classList.add('no-anime');
+		}
+	}, 3000);
 }
 
 // Fungsi untuk memasang sensor (observer) ke semua elemen yang punya data-anime
@@ -117,14 +153,12 @@ function initAnimeScroll() {
 // Fungsi Pembunuh Loading Screen
 function hideLoaderAndStartAnimation() {
 	const globalLoader = document.getElementById('global-loader');
-
 	if (!globalLoader.classList.contains('hidden')) {
 		globalLoader.style.opacity = '0';
-
 		setTimeout(() => {
 			globalLoader.classList.add('hidden');
-			// Nyalakan sensor animasi untuk elemen statis (Header, About Me, dll)
 			initAnimeScroll();
+			safetyNet(); // Jalankan jaring pengaman
 		}, 700);
 	}
 }
@@ -174,7 +208,7 @@ async function fetchProfileData() {
 		const aliasLink = document.getElementById('footer-alias-link');
 		const currentYear = new Date().getFullYear();
 
-		nameLink.innerText = `By ${data.name}`;
+		nameLink.innerText = `By ${data.name.replace(/<br>/g, '')}`;
 		nameLink.href = `https://www.google.com/search?q=${encodeURIComponent(data.name)}`;
 
 		aliasLink.innerText = `©${currentYear} ${data.alias}`;

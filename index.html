@@ -15,9 +15,15 @@
 
     <style>
 
-        /* Menyembunyikan elemen sebelum dianimasikan oleh Anime.js */
+        /* CSS Penahan Awal */
         [data-anime] {
             opacity: 0;
+        }
+
+        /* Class penyelamat jika sistem animasi dimatikan */
+        .no-anime [data-anime] {
+            opacity: 1 !important;
+            transform: none !important;
         }
         /* Scrollbar kustom tetap menggunakan CSS karena Tailwind tidak memiliki utilitas bawaan untuk webkit scrollbar */
         body {
@@ -119,7 +125,7 @@
 
                 <div class="absolute top-0 left-0 w-full text-white flex flex-row z-10 pointer-events-none">
 
-                    <div data-anime="fade-right" data-anime-no-flip="true" class="w-[50%] lg:w-[65%] xl:w-[45%] lg:ml-6 p-4 sm:p-6 pointer-events-auto flex flex-col justify-start xl:justify-center xl:mt-0">
+                    <div data-anime="fade-right" data-anime-no-flip="true" class="w-[60%] lg:w-[65%] xl:w-[45%] lg:ml-6 p-4 sm:p-6 pointer-events-auto flex flex-col justify-start xl:justify-center xl:mt-0">
                         <blockquote class="relative">
                             <a class="text-white decoration-transparent" href="https://www.google.com/search?q=raja+zhafif+raditya">
                                 <p id="profile-name" class="text-[18px] sm:text-5xl lg:text-6xl font-light leading-tight">Loading...</p>
