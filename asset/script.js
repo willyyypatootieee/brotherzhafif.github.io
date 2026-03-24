@@ -42,28 +42,6 @@ const isLowEndMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera
 
 const scrollObserver = new IntersectionObserver((entries) => {
 	entries.forEach(entry => {
-
-		if (entry.isIntersecting) {
-			anime.remove(el);
-
-			// GUNANYA DI SINI:
-			// Jika HP, durasi dicepetin jadi 200ms & startY jadi 0 biar gak berat ngerender gerak
-			const finalDuration = isLowEndMobile ? 200 : 1000;
-			const mobileY = isLowEndMobile ? 0 : startY;
-			const mobileX = isLowEndMobile ? 0 : startX;
-
-			// ANIMASI MUNCUL
-			anime({
-				targets: el,
-				opacity: [0, 1],
-				translateY: [mobileY, 0], // Jadi 0 kalau di HP
-				translateX: [mobileX, 0], // Jadi 0 kalau di HP
-				scale: [startScale, 1],
-				duration: finalDuration, // Jadi instan/cepet kalau di HP
-				delay: parseInt(delay),
-				easing: 'easeOutCubic'
-			});
-		}
 		const el = entry.target;
 		const animType = el.getAttribute('data-anime');
 		const delay = el.getAttribute('data-anime-delay') || 0;
@@ -86,29 +64,22 @@ const scrollObserver = new IntersectionObserver((entries) => {
 		if (entry.isIntersecting) {
 			anime.remove(el);
 
+			// GUNANYA DI SINI:
+			// Jika HP, durasi dicepetin jadi 200ms & startY jadi 0 biar gak berat ngerender gerak
+			const finalDuration = isLowEndMobile ? 200 : 1000;
+			const mobileY = isLowEndMobile ? 0 : startY;
+			const mobileX = isLowEndMobile ? 0 : startX;
+
 			// ANIMASI MUNCUL
 			anime({
 				targets: el,
 				opacity: [0, 1],
-				translateY: [startY, 0],
-				translateX: [startX, 0],
+				translateY: [mobileY, 0], // Jadi 0 kalau di HP
+				translateX: [mobileX, 0], // Jadi 0 kalau di HP
 				scale: [startScale, 1],
-				duration: 1000,
+				duration: finalDuration, // Jadi instan/cepet kalau di HP
 				delay: parseInt(delay),
 				easing: 'easeOutCubic'
-			});
-		} else {
-			anime.remove(el);
-
-			// ANIMASI SEMBUNYI (Mundur)
-			anime({
-				targets: el,
-				opacity: 0,
-				translateY: startY,
-				translateX: startX,
-				scale: startScale,
-				duration: 500,
-				easing: 'easeInCubic'
 			});
 		}
 	});
