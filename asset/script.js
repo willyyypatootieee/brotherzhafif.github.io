@@ -471,13 +471,38 @@ function renderCertificates(posts) {
 
 	// Inisialisasi Ulang Swiper (Gak ada ubahan di sini)
 	if (certSwiper) certSwiper.destroy();
+
+	// Inisialisasi Swiper Sertifikat (Versi Mobile Friendly)
 	certSwiper = new Swiper(".mySwiper", {
-		spaceBetween: 30,
-		effect: "slide",
-		loop: posts.length > 1,
-		autoplay: { delay: 10000, disableOnInteraction: false },
-		pagination: { el: ".swiper-pagination", clickable: true },
-		navigation: { nextEl: ".swiper-button-next", prevEl: ".swiper-button-prev" }
+		slidesPerView: 1, // Fokus satu sertifikat per slide di HP
+		spaceBetween: 20,
+		centeredSlides: true,
+
+		// BIAR BISA GESER KIRI-KANAN DENGAN LANCAR:
+		loop: posts.length > 1, // Aktifkan loop HANYA jika sertifikat lebih dari 1
+		grabCursor: true,
+		allowTouchMove: true, // Pastikan sentuhan jari aktif
+
+		// Hilangkan navigasi & pagination di layar kecil via Breakpoints
+		breakpoints: {
+			// Ketika lebar layar >= 768px (Tablet/Laptop)
+			768: {
+				navigation: {
+					nextEl: ".swiper-button-next",
+					prevEl: ".swiper-button-prev",
+				},
+				pagination: {
+					el: ".swiper-pagination",
+					clickable: true,
+				},
+			}
+		},
+
+		// Autoplay biar makin cakep
+		autoplay: {
+			delay: 3000,
+			disableOnInteraction: false,
+		},
 	});
 
 	if (customLightbox) customLightbox.destroy();

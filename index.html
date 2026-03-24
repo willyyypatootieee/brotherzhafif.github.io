@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="UTF-8" />
+    <link rel="stylesheet" href="asset/style.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Raja Zhafif Raditya Harahap</title>
     <link id="web-favicon" rel="shortcut icon" href="" type="image/x-icon">
@@ -12,83 +13,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-
-    <style>
-        /* Class penyelamat jika sistem animasi dimatikan */
-        .no-anime [data-anime] {
-            opacity: 1 !important;
-            transform: none !important;
-        }
-        /* Scrollbar kustom tetap menggunakan CSS karena Tailwind tidak memiliki utilitas bawaan untuk webkit scrollbar */
-        body {
-            background-color: #333445;
-        }
-        ::-webkit-scrollbar-track {
-            background-color: #11121a;
-        }
-        ::-webkit-scrollbar-thumb {
-            background-color: black;
-        }
-        ::-webkit-scrollbar {
-            width: 0px;
-        }
-        @media only screen and (min-width: 1024px) {
-            ::-webkit-scrollbar {
-                width: 2vh;
-            }
-        }
-
-        /* Scrollbar khusus untuk laci Achievement */
-        .drawer-scroll::-webkit-scrollbar {
-            width: 8px;
-        }
-        .drawer-scroll::-webkit-scrollbar-track {
-            background-color: #11121a;
-            border-radius: 4px;
-        }
-        .drawer-scroll::-webkit-scrollbar-thumb {
-            background-color: #333445;
-            border-radius: 4px;
-        }
-
-        /* Custom Swiper Pagination (Indikator Kotak) */
-        .swiper-pagination-bullet {
-            width: 14px !important;
-            height: 6px !important; /* Membuatnya berbentuk kotak/persegi panjang */
-            border-radius: 2px !important; /* Sudut sedikit tumpul */
-            background: white !important;
-            opacity: 0.3 !important;
-            transition: all 0.3s ease-in-out !important;
-        }
-
-        /* Indikator saat halaman sedang aktif */
-        .swiper-pagination-bullet-active {
-            opacity: 1 !important;
-            width: 24px !important; /* Agak memanjang saat aktif (opsional) */
-            background: #ffffff !important;
-        }
-
-        /* Membuat transisi swiper linear tanpa rem/gas */
-        .swiper-software .swiper-wrapper,
-        .swiper-creative .swiper-wrapper {
-            transition-timing-function: linear !important;
-        }
-
-        /* CSS KUBUS MINIMALIS */
-        .cube-face {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background: transparent; /* Kosong (transparan) agar cuma outline yang terlihat */
-        }
-        /* Jarak translateZ adalah setengah dari lebar kubus (16 w-16 Tailwind = 64px, setengahnya = 32px) */
-        .cube-face.front  { transform: rotateY(0deg) translateZ(32px); }
-        .cube-face.back   { transform: rotateY(180deg) translateZ(32px); }
-        .cube-face.right  { transform: rotateY(90deg) translateZ(32px); }
-        .cube-face.left   { transform: rotateY(-90deg) translateZ(32px); }
-        .cube-face.top    { transform: rotateX(90deg) translateZ(32px); }
-        .cube-face.bottom { transform: rotateX(-90deg) translateZ(32px); }
-    </style>
 </head>
 
 <body class="overflow-x-hidden w-full text-white bg-[#333445]">
