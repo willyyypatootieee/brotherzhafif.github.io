@@ -1,3 +1,134 @@
+// ==========================================
+// ANIMASI LOADER MINIMALIS (ANIME.JS)
+// ==========================================
+
+// 1. Kubus Mutar Santai
+anime({
+	targets: '#global-loader .cube-wrapper',
+	rotateX: [0, 360],
+	rotateY: [0, 360],
+	duration: 3000,
+	loop: true,
+	easing: 'linear' // Putaran stabil gak pakai rem
+});
+
+// 2. Efek Wave (Gelombang) pada Teks Loading
+anime({
+	targets: '#loading-text span',
+	translateY: [-10, 0], // Hurufnya ditarik naik 10px lalu kembali
+	duration: 500,
+	delay: anime.stagger(100), // INI KUNCINYA: Huruf selanjutnya nunggu 100ms
+	direction: 'alternate', // Bolak-balik (naik, lalu turun)
+	loop: true,
+	easing: 'easeInOutSine'
+});
+
+// ==========================================
+// MESIN ANIMASI SCROLL CUSTOM (ANIME.JS) - FLIP DENGAN PENGECUALIAN
+// ==========================================
+
+// Detektor Arah Scroll
+let lastScrollTop = window.scrollY || document.documentElement.scrollTop;
+let isScrollingDown = true;
+
+window.addEventListener('scroll', () => {
+	let currentScroll = window.scrollY || document.documentElement.scrollTop;
+	isScrollingDown = currentScroll > lastScrollTop;
+	lastScrollTop = currentScroll <= 0 ? 0 : currentScroll;
+}, false);
+
+const scrollObserver = new IntersectionObserver((entries) => {
+	entries.forEach(entry => {
+		const el = entry.target;
+		const animType = el.getAttribute('data-anime');
+		const delay = el.getAttribute('data-anime-delay') || 0;
+
+		// CEK PENGECUALIAN: Apakah elemen ini punya atribut anti-flip?
+		const noFlip = el.hasAttribute('data-anime-no-flip');
+
+		// KUNCI: Kalau noFlip ada, multiplier SELALU 1 (normal). Kalau gak ada, ikuti arah scroll.
+		const dirMultiplier = (isScrollingDown || noFlip) ? 1 : -1;
+
+		let startY = 0;
+		let startX = 0;
+		let startScale = 1;
+
+		if (animType === 'fade-up') startY = 50 * dirMultiplier;
+		if (animType === 'fade-right') startX = -50 * dirMultiplier;
+		if (animType === 'fade-left') startX = 50 * dirMultiplier;
+		if (animType === 'zoom-in') startScale = 0.8;
+
+		if (entry.isIntersecting) {
+			anime.remove(el);
+
+			// ANIMASI MUNCUL
+			anime({
+				targets: el,
+				opacity: [0, 1],
+				translateY: [startY, 0],
+				translateX: [startX, 0],
+				scale: [startScale, 1],
+				duration: 800,
+				delay: parseInt(delay),
+				easing: 'easeOutCubic'
+			});
+		} else {
+			anime.remove(el);
+
+			// ANIMASI SEMBUNYI (Mundur)
+			anime({
+				targets: el,
+				opacity: 0,
+				translateY: startY,
+				translateX: startX,
+				scale: startScale,
+				duration: 500,
+				easing: 'easeInCubic'
+			});
+		}
+	});
+}, {
+	root: null,
+	rootMargin: '0px',
+	threshold: 0.15
+});
+
+// Fungsi untuk memasang sensor ke elemen (Tetap sama)
+function initAnimeScroll() {
+	document.querySelectorAll('[data-anime]').forEach(el => {
+		if (!el.classList.contains('is-observed')) {
+			scrollObserver.observe(el);
+			el.classList.add('is-observed');
+		}
+	});
+}
+
+// Fungsi untuk memasang sensor (observer) ke semua elemen yang punya data-anime
+function initAnimeScroll() {
+	document.querySelectorAll('[data-anime]').forEach(el => {
+		// Cek apakah elemen sudah di-observe supaya tidak double
+		if (!el.classList.contains('is-observed')) {
+			scrollObserver.observe(el);
+			el.classList.add('is-observed');
+		}
+	});
+}
+
+// Fungsi Pembunuh Loading Screen
+function hideLoaderAndStartAnimation() {
+	const globalLoader = document.getElementById('global-loader');
+
+	if (!globalLoader.classList.contains('hidden')) {
+		globalLoader.style.opacity = '0';
+
+		setTimeout(() => {
+			globalLoader.classList.add('hidden');
+			// Nyalakan sensor animasi untuk elemen statis (Header, About Me, dll)
+			initAnimeScroll();
+		}, 700);
+	}
+}
+
 // INISIALISASI SUPABASE (GANTI DENGAN URL & KEY MILIKMU!)
 const SUPABASE_URL = 'https://cequvuujxqkzguvxbpzg.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_TbMXWbW5nhIyUU7QlIayIg_quPVpE3g';
@@ -24,13 +155,13 @@ async function fetchProfileData() {
 
 	if (data) {
 		// Suntikkan data dari database ke HTML
-		document.getElementById('profile-name').innerHTML = data.name;
+		typeWriter('profile-name', data.name, 50);
 		document.getElementById('profile-alias').innerText = data.alias;
 		document.getElementById('profile-alias').title = data.alias;
-		document.getElementById('profile-role').innerHTML = data.role;
+		typeWriter('profile-role', data.role, 25);
 		document.getElementById('profile-org').innerText = data.organization;
 		document.getElementById('profile-org').title = data.organization;
-		document.getElementById('profile-desc').innerHTML = data.description;
+		typeWriter('profile-desc', data.description, 5);
 
 		// Suntikkan Data Footer Links
 		renderFooterLinks(data.footer_tech_1, 'tech-col-1');
@@ -76,8 +207,7 @@ async function fetchProfileData() {
 
 		} else {
 			// Jika belum ada foto di database/upload gagal, langsung buka loading screen agar web tidak freeze
-			globalLoader.style.opacity = '0';
-			setTimeout(() => globalLoader.classList.add('hidden'), 700);
+			hideLoaderAndStartAnimation();
 		}
 	}
 }
@@ -227,6 +357,8 @@ function renderAchievements(posts) {
 		loop: true,
 		zoomable: true
 	});
+
+	initAnimeScroll();
 }
 
 // Fungsi Buka Tutup Laci
@@ -337,7 +469,7 @@ function renderCertificates(posts) {
 	certSwiper = new Swiper(".mySwiper", {
 		spaceBetween: 30,
 		effect: "slide",
-		loop: true,
+		loop: posts.length > 1,
 		autoplay: { delay: 10000, disableOnInteraction: false },
 		pagination: { el: ".swiper-pagination", clickable: true },
 		navigation: { nextEl: ".swiper-button-next", prevEl: ".swiper-button-prev" }
@@ -345,6 +477,8 @@ function renderCertificates(posts) {
 
 	if (customLightbox) customLightbox.destroy();
 	customLightbox = GLightbox({ selector: '.glightbox', touchNavigation: true, loop: true, zoomable: true });
+
+	initAnimeScroll();
 }
 
 // Variable Global untuk Swiper Marquee
@@ -441,7 +575,7 @@ function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
 	window[swiperVarName] = new Swiper(swiperSelector, {
 		slidesPerView: "auto",
 		spaceBetween: 20,
-		loop: true,
+		loop: posts.length > 3,
 		speed: 4000,
 		autoplay: { delay: 0, disableOnInteraction: false },
 		allowTouchMove: true,
@@ -449,6 +583,8 @@ function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
 
 	if (customLightbox) customLightbox.destroy();
 	customLightbox = GLightbox({ selector: '.glightbox', touchNavigation: true, loop: true, zoomable: true });
+
+	initAnimeScroll();
 }
 
 // Helper: Ubah teks "Nama | URL" menjadi tag <a> HTML
@@ -467,6 +603,47 @@ function renderFooterLinks(textData, containerId) {
 			container.innerHTML += `<a class="text-[10px] sm:text-[12px] lg:text-base text-white/50 hover:text-white transition-colors" href="${url}" target="_blank">${name}</a>`;
 		}
 	});
+}
+
+// ANIMASI 2: Ikon Sosmed Mumbul Sedikit Pas Di-load
+anime({
+	targets: '.bi-youtube, .bi-instagram, .bi-github, .bi-twitter, .bi-linkedin',
+	translateY: [-20, 0],
+	opacity: [0, 1],
+	delay: anime.stagger(150, { start: 1000 }), // Munculnya bergiliran!
+	duration: 1000,
+	easing: 'easeOutElastic(1, .5)'
+});
+
+// Fungsi Efek Mengetik Ala Terminal (Support HTML Tags seperti <br>)
+function typeWriter(elementId, text, speed) {
+	let i = 0;
+	const element = document.getElementById(elementId);
+	element.innerHTML = ""; // Kosongkan dulu
+
+	function type() {
+		if (i < text.length) {
+			// Cek apakah karakter saat ini adalah awal dari tag HTML
+			if (text.charAt(i) === '<') {
+				// Cari posisi penutup tag '>'
+				let tagCloseIndex = text.indexOf('>', i);
+				if (tagCloseIndex !== -1) {
+					// Masukkan SELURUH tag sekaligus (misal: <br>)
+					element.innerHTML += text.substring(i, tagCloseIndex + 1);
+					i = tagCloseIndex + 1; // Lompat ke karakter setelah '>'
+				} else {
+					element.innerHTML += text.charAt(i);
+					i++;
+				}
+			} else {
+				// Jika bukan tag HTML, ketik huruf per huruf seperti biasa
+				element.innerHTML += text.charAt(i);
+				i++;
+			}
+			setTimeout(type, speed);
+		}
+	}
+	type(); // Jalankan
 }
 
 fetchWorks();

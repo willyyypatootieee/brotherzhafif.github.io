@@ -9,10 +9,16 @@
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/glightbox/dist/css/glightbox.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
+
+        /* Menyembunyikan elemen sebelum dianimasikan oleh Anime.js */
+        [data-anime] {
+            opacity: 0;
+        }
         /* Scrollbar kustom tetap menggunakan CSS karena Tailwind tidak memiliki utilitas bawaan untuk webkit scrollbar */
         body {
             background-color: #333445;
@@ -67,13 +73,40 @@
         .swiper-creative .swiper-wrapper {
             transition-timing-function: linear !important;
         }
+
+        /* CSS KUBUS MINIMALIS */
+        .cube-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: transparent; /* Kosong (transparan) agar cuma outline yang terlihat */
+        }
+        /* Jarak translateZ adalah setengah dari lebar kubus (16 w-16 Tailwind = 64px, setengahnya = 32px) */
+        .cube-face.front  { transform: rotateY(0deg) translateZ(32px); }
+        .cube-face.back   { transform: rotateY(180deg) translateZ(32px); }
+        .cube-face.right  { transform: rotateY(90deg) translateZ(32px); }
+        .cube-face.left   { transform: rotateY(-90deg) translateZ(32px); }
+        .cube-face.top    { transform: rotateX(90deg) translateZ(32px); }
+        .cube-face.bottom { transform: rotateX(-90deg) translateZ(32px); }
     </style>
 </head>
 
 <body class="overflow-x-hidden w-full text-white bg-[#333445]">
-    <div id="global-loader" class="fixed inset-0 z-[999] bg-[#333445] flex flex-col items-center justify-center transition-opacity duration-700 ease-in-out">
-        <i class="bi bi-code-square text-6xl text-white animate-pulse mb-4"></i>
-        <p class="text-white font-mono animate-pulse tracking-widest">Memuat Portofolio...</p>
+    <div id="global-loader" class="fixed inset-0 z-[999] bg-[#333445] flex flex-col items-center justify-center transition-opacity duration-700 ease-in-out" style="perspective: 800px;">
+        
+        <div class="cube-wrapper w-16 h-16 relative mb-12" style="transform-style: preserve-3d;">
+            <div class="cube-face front border-2 border-white/50"></div>
+            <div class="cube-face back border-2 border-white/50"></div>
+            <div class="cube-face right border-2 border-white/50"></div>
+            <div class="cube-face left border-2 border-white/50"></div>
+            <div class="cube-face top border-2 border-white/50"></div>
+            <div class="cube-face bottom border-2 border-white/50"></div>
+        </div>
+
+        <div id="loading-text" class="text-white font-mono tracking-widest text-lg flex">
+            <span>L</span><span>o</span><span>a</span><span>d</span><span>i</span><span>n</span><span>g</span><span>.</span><span>.</span><span>.</span>
+        </div>
+        
     </div>
 
     <div class="w-full p-0">
@@ -81,9 +114,12 @@
             
             <div id="Header" class="w-full h-[250px] sm:h-[380px] md:h-[450px] lg:h-[480px] xl:h-[550px] relative flex flex-col items-center overflow-hidden">
                 
+                <div class="absolute top-[-20%] left-[-10%] w-[50%] h-[70%] bg-blue-600/20 blur-[100px] rounded-full pointer-events-none mix-blend-screen animate-pulse z-0" style="animation-duration: 4s;"></div>
+                <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[60%] bg-purple-600/20 blur-[120px] rounded-full pointer-events-none mix-blend-screen animate-pulse z-0" style="animation-duration: 6s; animation-delay: 2s;"></div>
+
                 <div class="absolute top-0 left-0 w-full text-white flex flex-row z-10 pointer-events-none">
 
-                    <div data-aos="fade-right" class="w-[50%] lg:w-[65%] xl:w-[45%] lg:ml-6 p-4 sm:p-6 pointer-events-auto flex flex-col justify-start xl:justify-center xl:mt-0">
+                    <div data-anime="fade-right" data-anime-no-flip="true" class="w-[50%] lg:w-[65%] xl:w-[45%] lg:ml-6 p-4 sm:p-6 pointer-events-auto flex flex-col justify-start xl:justify-center xl:mt-0">
                         <blockquote class="relative">
                             <a class="text-white decoration-transparent" href="https://www.google.com/search?q=raja+zhafif+raditya">
                                 <p id="profile-name" class="text-[18px] sm:text-5xl lg:text-6xl font-light leading-tight">Loading...</p>
@@ -93,17 +129,17 @@
                             <p id="profile-role" class="text-[12px] sm:text-3xl lg:text-[42px] font-light leading-tight"></p>
                             <footer class="mt-2 sm:mt-4 text-[10px] sm:text-base text-neutral-400">Member Of <cite id="profile-org" class="not-italic text-neutral-300"></cite></footer>
 
-                            <div data-aos-delay="200" data-aos="fade-right" class="flex flex-wrap mt-4 sm:text-4xl md:text-3xl lg:text-4xl lg:gap-8 lg:mt-8 gap-3 sm:gap-4">
-                                <a data-aos-delay="300" data-aos="fade-up" class="text-white hover:text-white/80 transition-colors" href="https://www.youtube.com/@BrotherZhafif"><i class="bi bi-youtube"></i></a>
-                                <a data-aos-delay="400" data-aos="fade-in" class="text-white hover:text-white/80 transition-colors" href="https://www.instagram.com/brotherzhafif/"><i class="bi bi-instagram"></i></a>
-                                <a data-aos-delay="500" data-aos="fade-in" class="text-white hover:text-white/80 transition-colors" href="https://github.com/brotherzhafif"><i class="bi bi-github"></i></a>
-                                <a data-aos-delay="600" data-aos="fade-in" class="text-white hover:text-white/80 transition-colors" href="https://twitter.com/brotherzhafif"><i class="bi bi-twitter"></i></a>
-                                <a data-aos-delay="700" data-aos="fade-in" class="text-white hover:text-white/80 transition-colors" href="https://id.linkedin.com/in/brotherzhafif"><i class="bi bi-linkedin"></i></a>
+                            <div data-anime-delay="200" data-anime-no-flip="true" data-anime="fade-right" class="flex flex-wrap mt-4 sm:text-4xl md:text-3xl lg:text-4xl lg:gap-8 lg:mt-8 gap-3 sm:gap-4">
+                                <a data-anime-delay="300" data-anime="fade-in" class="text-white hover:text-white/80 transition-colors" href="https://www.youtube.com/@BrotherZhafif"><i class="bi bi-youtube"></i></a>
+                                <a data-anime-delay="400" data-anime="fade-in" class="text-white hover:text-white/80 transition-colors" href="https://www.instagram.com/brotherzhafif/"><i class="bi bi-instagram"></i></a>
+                                <a data-anime-delay="500" data-anime="fade-in" class="text-white hover:text-white/80 transition-colors" href="https://github.com/brotherzhafif"><i class="bi bi-github"></i></a>
+                                <a data-anime-delay="600" data-anime="fade-in" class="text-white hover:text-white/80 transition-colors" href="https://twitter.com/brotherzhafif"><i class="bi bi-twitter"></i></a>
+                                <a data-anime-delay="700" data-anime="fade-in" class="text-white hover:text-white/80 transition-colors" href="https://id.linkedin.com/in/brotherzhafif"><i class="bi bi-linkedin"></i></a>
                             </div>
                         </blockquote>
                     </div>
 
-                    <div data-aos="fade-left" class="hidden xl:block absolute right-0 pt-3 p-12 w-5/12 pointer-events-auto top-0">
+                    <div data-anime="fade-left" data-anime-no-flip="true" class="hidden xl:block absolute right-0 pt-3 p-12 w-5/12 pointer-events-auto top-0">
                         <blockquote class="text-right">
                             <footer class="mt-1 text-base text-neutral-500">Introduction</footer>
                             <p class="text-3xl lg:text-[42px] font-light mb-4">About Me</p>
@@ -118,17 +154,17 @@
 
                             <div style="height: 1px;"></div>
 
-                            <div data-aos-delay="200" data-aos="fade-left" class="mt-12 sm:mt-8 font-mono text-base">
-                                <a data-aos-delay="500" data-aos="fade-left" class="text-neutral-300 mx-3 hover:underline" href="#Achievement">Achievement</a>
-                                <a data-aos-delay="400" data-aos="fade-left" class="text-neutral-300 mx-3 hover:underline" href="#Works">Works</a>
-                                <a data-aos-delay="300" data-aos="fade-left" class="text-neutral-300 ml-3 hover:underline" href="#Technology">Technology</a>
+                            <div data-anime-delay="200" data-anime-no-flip="true" data-anime="fade-left" class="mt-12 sm:mt-8 font-mono text-base">
+                                <a data-anime-delay="500" data-anime="fade-left" class="text-neutral-300 mx-3 hover:underline" href="#Achievement">Achievement</a>
+                                <a data-anime-delay="400" data-anime="fade-left" class="text-neutral-300 mx-3 hover:underline" href="#Works">Works</a>
+                                <a data-anime-delay="300" data-anime="fade-left" class="text-neutral-300 ml-3 hover:underline" href="#Technology">Technology</a>
                             </div>
                         </blockquote>
                     </div>
                 </div>
 
                 <div class="absolute bottom-0 right-0 w-full h-auto flex flex-col pointer-events-none z-0">
-                    <div data-aos="fade-up" class="w-[200px] h-[200px] sm:w-[320px] sm:h-[320px] md:w-[420px] md:h-[420px] lg:w-[440px] lg:h-[440px] xl:w-[520px] xl:h-[520px] self-end xl:self-center flex justify-center items-center relative right-0 xl:right-auto mt-auto">
+                    <div data-anime="fade-up" data-anime-no-flip="true" class="w-[200px] h-[200px] sm:w-[320px] sm:h-[320px] md:w-[420px] md:h-[420px] lg:w-[440px] lg:h-[440px] xl:w-[520px] xl:h-[520px] self-end xl:self-center flex justify-center items-center relative right-0 xl:right-auto mt-auto">
                         
                         <img id="profile-img-low" class="absolute w-full h-full object-contain blur-md transition-all duration-700 ease-in-out scale-110" alt="Profile Low">
                         
@@ -137,9 +173,9 @@
                 </div>
             </div>
 
-            <div data-aos="fade-up" class="relative z-20">
+            <div class="relative z-20">
                 <div id="Achievement" class="bg-[#1f202b] shadow-[0_0_50px_black] text-white flex flex-col items-center p-6 md:p-12 z-20 relative rounded-b-[2rem] rounded-t-lg">
-                    <div data-aos="fade-up" class="w-full flex flex-col items-center w-full">
+                    <div data-anime="fade-up" class="w-full flex flex-col items-center w-full">
 
                        <div class="text-center mb-8">
                             <p class="text-lg md:text-3xl lg:text-4xl font-light">Achievement</p>
@@ -169,7 +205,7 @@
                         <hr class="border-white/20">
                     </div>
 
-                    <div data-aos="fade-up" class="flex flex-col text-base w-full">
+                    <div data-anime="fade-up" class="flex flex-col text-base w-full">
 						<div class="mb-12 text-center w-full flex justify-center items-center p-2 lg:p-4">
 							<div class="swiper mySwiper w-full h-[480px] rounded-lg overflow-hidden relative">
     
@@ -193,9 +229,9 @@
                 </div>
             </div>
 
-            <div data-aos="fade-up" id="Works" class="text-white flex flex-col items-center">
+            <div data-anime="fade-up" id="Works" class="text-white flex flex-col items-center">
 
-                <div data-aos="fade-up" class="m-12 w-full">
+                <div data-anime="fade-up" class="m-12 w-full">
                     <div class="text-center mb-8">
                         <p class="text-lg md:text-3xl lg:text-4xl font-light">Software Creation</p>
                         <p class="text-[10px] md:text-base text-white/50">Some Software I Develop For Learning And Competition Purpose</p>
@@ -215,7 +251,7 @@
                     <hr class="border-white/20">
                 </div>
 
-                <div data-aos="fade-up" class="m-12 w-full">
+                <div data-anime="fade-up" class="m-12 w-full">
                     <div class="text-center mb-8">
                         <p class="text-lg md:text-3xl lg:text-4xl font-light">Creative Creation</p>
                         <p class="text-[10px] md:text-base text-white/50">My Arts And Animations I Make For Fun As A Hobby In Free Time</p>
@@ -232,7 +268,7 @@
                 </div>
             </div>
 
-            <div data-aos="fade-up" id="Technology" class="bg-[#1f202b] shadow-[0_0_50px_black] text-white flex flex-col items-center z-30 relative aos-init aos-animate">
+            <div data-anime="fade-up" id="Technology" class="bg-[#1f202b] shadow-[0_0_50px_black] text-white flex flex-col items-center z-30 relative aos-init aos-animate">
 
                 <div class="flex flex-col sm:flex-col lg:flex-row items-center w-full lg:w-5/6 p-8 gap-8 lg:gap-0">
 
