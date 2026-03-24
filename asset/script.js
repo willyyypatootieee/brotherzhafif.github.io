@@ -224,6 +224,13 @@ function hideLoaderAndStartAnimation() {
 			safetyNet(); // Jalankan jaring pengaman
 		}, 700);
 	}
+
+	// Start Efek Senter
+	initProfileFlashlight();
+
+	// Start Hint Animation (Interval 12 detik)
+	playProfileHint(); // Mainkan sekali di awal
+	setInterval(playProfileHint, 12000); // Mainkan terus setiap 12 detik
 }
 
 // INISIALISASI SUPABASE (GANTI DENGAN URL & KEY MILIKMU!)
@@ -277,33 +284,42 @@ async function fetchProfileData() {
 		aliasLink.innerText = `©${currentYear} ${data.alias}`;
 		aliasLink.href = `https://www.google.com/search?q=${encodeURIComponent(data.alias)}`;
 
-		// Logika Progressive Image untuk Profil
-		const highResUrl = data.image_url;
+		// Logika gambar profil 3 layer: robot (kiri), artist (kanan), normal (overlay senter)
+		const normalHighResUrl = data.normal_image_url || data.normal_image_url;
+		const robotHighResUrl = data.robot_image_url || normalHighResUrl;
+		const artistHighResUrl = data.artist_image_url || normalHighResUrl;
 
-		// Cek apakah data gambar profil valid dari Supabase Storage
-		if (highResUrl && highResUrl.includes('supabase.co')) {
-			const lastDotIndex = highResUrl.lastIndexOf('.');
-			const lowResUrl = highResUrl.substring(0, lastDotIndex) + '-low.webp';
+		if (normalHighResUrl && normalHighResUrl.includes('supabase.co')) {
+			const lastDotIndex = normalHighResUrl.lastIndexOf('.');
+			const normalLowResUrl = normalHighResUrl.substring(0, lastDotIndex) + '-low.webp';
 
-			const imgLow = document.getElementById('profile-img-low');
-			const imgHigh = document.getElementById('profile-img-high');
+			const normalLow = document.getElementById('profile-normal-low');
+			const normalHigh = document.getElementById('profile-normal');
+			const robotImg = document.getElementById('profile-robot');
+			const artistImg = document.getElementById('profile-artist');
 			const favicon = document.getElementById('web-favicon');
 
-			// --- BAGIAN PENTING: KONTROL FULL-SCREEN LOADER ---
-			// Ketika gambar profil versi LOW-RES (yg ukurannya kecil banget) sudah dimuat,
-			// barulah kita menghilangkan layar loading hitam. Web siap dilihat.
-			imgLow.onload = () => {
-				globalLoader.style.opacity = '0'; // Buat layar jadi transparan halus
-				setTimeout(() => globalLoader.classList.add('hidden'), 700); // Setelah 0.7s, hapus elemennya total
-			};
+			if (robotImg && robotHighResUrl) robotImg.src = robotHighResUrl;
+			if (artistImg && artistHighResUrl) artistImg.src = artistHighResUrl;
 
-			// Beri perintah untuk memuat gambar
-			imgLow.src = lowResUrl;
-			imgHigh.src = highResUrl;
-			favicon.href = highResUrl; // Gunakan foto profil juga sebagai ikon web (favicon)
+			if (normalLow) {
+				normalLow.onload = () => {
+					hideLoaderAndStartAnimation();
+				};
+				normalLow.src = normalLowResUrl;
+			}
 
+			if (normalHigh) {
+				normalHigh.onload = () => {
+					normalHigh.classList.remove('opacity-0');
+					if (normalLow) normalLow.classList.add('opacity-0');
+				};
+				normalHigh.src = normalHighResUrl;
+			}
+
+			favicon.href = normalHighResUrl;
 		} else {
-			// Jika belum ada foto di database/upload gagal, langsung buka loading screen agar web tidak freeze
+			// Jika belum ada foto profile normal, langsung buka loading screen agar web tidak freeze
 			hideLoaderAndStartAnimation();
 		}
 	}
@@ -809,7 +825,185 @@ function typeWriter(elementId, text, speed) {
 	type(); // Jalankan
 }
 
+// ==========================================
+// PURE SIGMA FLASHLIGHT REVEAL EFFECT
+// ==========================================
+
+function initProfileFlashlight() {
+	const container = document.querySelector('#profile-reveal-container div');
+	const revealWrapper = document.getElementById('reveal-wrapper');
+
+	if (!container || !revealWrapper) return;
+
+	// Jari-jari lubang senter (makin besar angkanya, makin luas sorotannya)
+	const flashlightRadius = isLowEndMobile ? 25 : 20;
+
+	// 1. Logika Pergerakan Senter
+	const moveFlashlight = (e) => {
+		const rect = container.getBoundingClientRect();
+
+		let x, y;
+		if (e.type === 'touchmove') {
+			x = e.touches[0].clientX - rect.left;
+			y = e.touches[0].clientY - rect.top;
+		} else {
+			x = e.clientX - rect.left;
+			y = e.clientY - rect.top;
+		}
+
+		const xPercent = (x / rect.width) * 100;
+		const yPercent = (y / rect.height) * 100;
+
+		anime.remove(revealWrapper);
+		anime({
+			targets: revealWrapper,
+			easing: 'easeOutCubic',
+			duration: 100,
+			// Perhatikan warnanya: Black dulu, baru Transparent
+			'-webkit-mask-image': `radial-gradient(circle at ${xPercent}% ${yPercent}%, black ${flashlightRadius}%, transparent ${flashlightRadius + 8}%)`,
+			'mask-image': `radial-gradient(circle at ${xPercent}% ${yPercent}%, black ${flashlightRadius}%, transparent ${flashlightRadius + 8}%)`
+		});
+	};
+
+	// 2. Logika Senter Hilang
+	const hideFlashlight = () => {
+		// Ambil posisi terakhir biar nutupnya dari titik tersebut (bukan balik ke tengah)
+		const currentMask = revealWrapper.style.maskImage || revealWrapper.style.webkitMaskImage;
+		const match = currentMask.match(/at (\d+\.?\d*)% (\d+\.?\d*)%/);
+		const lastX = match ? match[1] : 50;
+		const lastY = match ? match[2] : 50;
+
+		anime({
+			targets: revealWrapper,
+			easing: 'easeInQuad',
+			duration: 400,
+			'-webkit-mask-image': `radial-gradient(circle at ${lastX}% ${lastY}%, black 0%, transparent 0%)`,
+			'mask-image': `radial-gradient(circle at ${lastX}% ${lastY}%, black 0%, transparent 0%)`
+		});
+	};
+
+	container.addEventListener('mousemove', moveFlashlight);
+	container.addEventListener('touchmove', moveFlashlight, { passive: true });
+	container.addEventListener('mouseleave', hideFlashlight);
+	container.addEventListener('touchend', hideFlashlight);
+}
+
+// ==========================================
+// HINT ANIMATION (KELAP-KELIP SIGMA)
+// ==========================================
+// Kita panggil fungsi ini setiap 10-15 detik
+function playProfileHint() {
+	const container = document.querySelector('#profile-reveal-container div');
+	if (!container) return;
+
+	// Tambah class buat trigger CSS Animation
+	container.classList.add('flash-hint');
+
+	// Hapus class setelah animasi beres biar bisa dipanggil lagi
+	setTimeout(() => {
+		container.classList.remove('flash-hint');
+	}, 1600); // Sedikit lebih lama dari durasi animasi CSS (1.5s)
+}
+
+// ==========================================
+// RENDER TECH RIBBON (TITLES ONLY)
+// ==========================================
+
+async function renderTechMarquee() {
+	const marqueeContent = document.getElementById('tech-marquee-content');
+	if (!marqueeContent) return;
+
+	// 1. Tarik data dari tabel 'me'
+	const { data, error } = await supabaseClient
+		.from('me')
+		.select('footer_tech_1, footer_tech_2')
+		.single(); // Ambil satu baris profil kamu
+
+	if (error) {
+		console.error('Gagal narik data tech marquee:', error);
+		return;
+	}
+
+	// 2. Fungsi Helper buat bersihin data "Judul | Link" -> "Judul"
+	const parseTechData = (columnData) => {
+		if (!columnData) return [];
+		// Pecah berdasarkan baris baru atau koma (tergantung cara kamu input di DB)
+		return columnData.split(/[\n,]+/).map(item => {
+			// Ambil bagian sebelum tanda '|' dan bersihkan spasi
+			return item.split('|')[0].trim();
+		}).filter(Boolean); // Hapus data kosong
+	};
+
+	// 3. Proses kedua kolom dan gabungkan
+	const list1 = parseTechData(data.footer_tech_1);
+	const list2 = parseTechData(data.footer_tech_2);
+	const allTech = [...list1, ...list2];
+
+	// 4. Render ke HTML dengan separator titik biru
+	const techString = allTech.map(tech => `
+        <span class="flex items-center gap-8">
+            ${tech} <span class="text-blue-500/40">•</span>
+        </span>
+    `).join('');
+
+	// 5. Inject & Duplicate 3x biar gak putus (Seamless)
+	marqueeContent.innerHTML = `
+        <div class="animate-tech">
+            ${techString} ${techString} ${techString}
+        </div>
+    `;
+}
+// Panggil fungsinya
+// ==========================================
+// FETCH & APPLY SOCIAL LINKS FROM SUPABASE
+// ==========================================
+
+async function initSocialLinks() {
+	// 1. Ambil data dari tabel (Ganti 'settings' dengan nama tabelmu)
+	const { data, error } = await supabaseClient
+		.from('me')
+		.select('footer_social')
+		.single();
+
+	if (error) {
+		console.error('Gagal mengambil link sosial:', error);
+		return;
+	}
+
+	// 2. Parsing Data (String -> Object)
+	// Format asal: Instagram | https://...
+	const socialLinks = {};
+	const lines = data.footer_social.split('\n'); // Pecah per baris
+
+	lines.forEach(line => {
+		if (line.includes('|')) {
+			const [label, url] = line.split('|').map(item => item.trim());
+			socialLinks[label] = url;
+		}
+	});
+
+	// 3. Suntikkan ke elemen berdasarkan [data-social]
+	document.querySelectorAll('[data-social]').forEach(el => {
+		const label = el.getAttribute('data-social');
+		if (socialLinks[label]) {
+			el.href = socialLinks[label];
+			// Tambahkan target blank kecuali email
+			if (label !== 'Email') el.target = "_blank";
+		}
+	});
+
+	// 4. Khusus untuk CV (Biasanya ada ID khusus)
+	const cvLink = document.getElementById('link-cv');
+	if (cvLink && socialLinks['CV']) {
+		cvLink.href = socialLinks['CV'];
+		cvLink.target = "_blank";
+	}
+}
+
+// Panggil di awal atau setelah loader hilang
 fetchWorks();
+initSocialLinks();
+renderTechMarquee();
 fetchAchievements();
 fetchCertificates();
 fetchProfileData();

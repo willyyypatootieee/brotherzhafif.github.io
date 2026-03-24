@@ -158,3 +158,85 @@ body {
 .nav-link:hover::after {
     width: 100%;
 }
+
+@keyframes tech-scroll {
+    from {
+        transform: translateX(0);
+    }
+
+    to {
+        transform: translateX(-50%);
+    }
+
+    /* Geser setengah lebar total karena kita duplicate datanya */
+}
+
+.animate-tech {
+    display: flex;
+    width: max-content;
+    animation: tech-scroll 100s linear infinite;
+    /* Semakin besar angkanya, semakin pelan jalannya */
+}
+
+/* Biar pas hover (kalau mau) bisa pelan, tapi karena kamu set pointer-events-none, ini opsional */
+#tech-marquee-container:hover .animate-tech {
+    animation-play-state: paused;
+}
+
+/* Container Utama untuk Pointer Events */
+#profile-reveal-container div {
+    pointer-events: auto;
+    /* Aktifkan pointer events biar bisa dideteksi mouse */
+}
+
+/* Layer Normal: Kita kasih efek Masking (Lubang Senter) */
+/* Lubang ini awalnya gaib (size 0) */
+#profile-normal {
+    -webkit-mask-image: radial-gradient(circle, transparent 0%, black 0%);
+    mask-image: radial-gradient(circle, transparent 0%, black 0%);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+}
+
+/* Layer Robot (Kiri) & Artist (Kanan): Kita belah layarnya jadi dua */
+#profile-robot {
+    clip-path: inset(0 50% 0 0);
+    /* Tampilkan hanya sisi KIRI */
+}
+
+/* --- TRANSISI ROBOT & ARTIST (SMOOTH BLUR) --- */
+#profile-artist {
+    /* Artist ada di kanan. Kita pudarkan sisi kirinya biar menyatu sama Robot di bawahnya */
+    -webkit-mask-image: linear-gradient(to right, transparent 35%, black 65%);
+    mask-image: linear-gradient(to right, transparent 35%, black 65%);
+}
+
+/* --- LOGIKA SENTER INVERTED --- */
+/* Black = Terlihat, Transparent = Sembunyi */
+#reveal-wrapper {
+    -webkit-mask-image: radial-gradient(circle at center, black 0%, transparent 0%);
+    mask-image: radial-gradient(circle at center, black 0%, transparent 0%);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+}
+
+/* --- HINT ANIMATION --- */
+@keyframes flashHint {
+
+    0%,
+    100% {
+        -webkit-mask-size: 100% 100%;
+        mask-size: 100% 100%;
+        -webkit-mask-image: radial-gradient(circle at center, black 0%, transparent 0%);
+    }
+
+    10%,
+    30% {
+        /* Buka senter segede-gedenya pas hint */
+        -webkit-mask-image: radial-gradient(circle at center, black 100%, transparent 100%);
+    }
+}
+
+.flash-hint #reveal-wrapper {
+    animation: flashHint 1.5s ease-in-out;
+}

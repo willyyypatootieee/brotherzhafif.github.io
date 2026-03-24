@@ -75,7 +75,7 @@
                 <div class="absolute top-[-20%] left-[-10%] w-[50%] h-[70%] bg-blue-600/20 blur-[100px] rounded-full pointer-events-none mix-blend-screen animate-pulse z-0" style="animation-duration: 4s;"></div>
                 <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[60%] bg-purple-600/20 blur-[120px] rounded-full pointer-events-none mix-blend-screen animate-pulse z-0" style="animation-duration: 6s; animation-delay: 2s;"></div>
 
-                <div class="absolute top-0 left-0 w-full text-white flex flex-row z-10 pointer-events-none">
+                <div class="absolute top-0 min-[1440px]:top-10 max-[780px]:top-5 left-0 w-full text-white flex flex-row z-10 pointer-events-none">
 
                     <div data-anime="fade-right" data-anime-no-flip="true" class="w-[60%] lg:w-[65%] xl:w-[45%] lg:ml-6 p-4 sm:p-6 pointer-events-auto flex flex-col justify-start xl:justify-center xl:mt-0">
                         <blockquote class="relative">
@@ -88,18 +88,18 @@
                             <footer class="mt-2 sm:mt-4 text-[10px] sm:text-base text-neutral-400">Member Of <cite id="profile-org" class="not-italic text-neutral-300"></cite></footer>
 
                             <div data-anime-delay="200" data-anime-no-flip="true" data-anime="fade-right" class="flex flex-wrap mt-4 sm:text-4xl md:text-3xl lg:text-4xl lg:gap-8 lg:mt-8 gap-3 sm:gap-4">
-                                <a data-anime-delay="300" data-anime="fade-in" class="text-white hover:text-white/80 transition-colors" href="https://www.youtube.com/@BrotherZhafif"><i class="bi bi-youtube"></i></a>
-                                <a data-anime-delay="400" data-anime="fade-in" class="text-white hover:text-white/80 transition-colors" href="https://www.instagram.com/brotherzhafif/"><i class="bi bi-instagram"></i></a>
-                                <a data-anime-delay="500" data-anime="fade-in" class="text-white hover:text-white/80 transition-colors" href="https://github.com/brotherzhafif"><i class="bi bi-github"></i></a>
-                                <a data-anime-delay="600" data-anime="fade-in" class="text-white hover:text-white/80 transition-colors" href="https://twitter.com/brotherzhafif"><i class="bi bi-twitter"></i></a>
-                                <a data-anime-delay="700" data-anime="fade-in" class="text-white hover:text-white/80 transition-colors" href="https://id.linkedin.com/in/brotherzhafif"><i class="bi bi-linkedin"></i></a>
+                                <a data-social="YouTube" data-anime-delay="300" data-anime="fade-in" class="text-white hover:text-white/80 transition-colors" href="#"><i class="bi bi-youtube"></i></a>
+                                <a data-social="Instagram" data-anime-delay="400" data-anime="fade-in" class="text-white hover:text-white/80 transition-colors" href="#"><i class="bi bi-instagram"></i></a>
+                                <a data-social="GitHub" data-anime-delay="500" data-anime="fade-in" class="text-white hover:text-white/80 transition-colors" href="#"><i class="bi bi-github"></i></a>
+                                <a data-social="Twitter" data-anime-delay="600" data-anime="fade-in" class="text-white hover:text-white/80 transition-colors" href="#"><i class="bi bi-twitter"></i></a>
+                                <a data-social="LinkedIn" data-anime-delay="700" data-anime="fade-in" class="text-white hover:text-white/80 transition-colors" href="#"><i class="bi bi-linkedin"></i></a>
                             </div>
                         </blockquote>
                     </div>
 
-                    <div data-anime="fade-left" data-anime-no-flip="true" class="hidden xl:block absolute right-0 pt-3 p-12 w-5/12 pointer-events-auto top-0">
+                    <div data-anime="fade-left" data-anime-no-flip="true" class="hidden xl:block absolute right-0 p-12 w-5/12 pointer-events-auto top-0">
                         <blockquote class="text-right">
-                            <footer class="mt-1 text-base text-neutral-500">Introduction</footer>
+                            <footer class="mb-1 text-base text-neutral-500">Introduction</footer>
                             <p class="text-3xl lg:text-[42px] font-light mb-4">About Me</p>
 
                             <div class="flex flex-row-reverse">
@@ -121,21 +121,37 @@
                     </div>
                 </div>
 
-                <div class="absolute bottom-0 right-0 w-full h-auto flex flex-col pointer-events-none z-0">
-                    <div data-anime="fade-up" data-anime-no-flip="true" class="w-[200px] h-[200px] sm:w-[320px] sm:h-[320px] md:w-[420px] md:h-[420px] lg:w-[440px] lg:h-[440px] xl:w-[520px] xl:h-[520px] self-end xl:self-center flex justify-center items-center relative right-0 xl:right-auto mt-auto">
+                <div id="profile-reveal-container" class="absolute bottom-0 right-0 w-full h-auto flex flex-col pointer-events-none z-20">
+                    <div data-anime="fade-up" data-anime-no-flip="true" 
+                        class="w-[200px] h-[200px] sm:w-[320px] sm:h-[320px] md:w-[420px] md:h-[420px] lg:w-[440px] lg:h-[440px] xl:w-[520px] xl:h-[520px] self-end xl:self-center flex justify-center items-center relative right-0 xl:right-auto mt-auto group overflow-hidden cursor-crosshair pointer-events-auto">
+
+                        <img id="profile-normal-low" class="absolute w-full h-full object-contain blur-md transition-all duration-700 ease-in-out scale-110" alt="Profile Normal Low">
                         
-                        <img id="profile-img-low" class="absolute w-full h-full object-contain blur-md transition-all duration-700 ease-in-out scale-110" alt="Profile Low">
-                        
-                        <img id="profile-img-high" class="absolute w-full h-full object-contain opacity-0 transition-opacity duration-700 ease-in-out" alt="Profile High" onload="this.classList.remove('opacity-0'); document.getElementById('profile-img-low').classList.add('opacity-0');">
+                        <img id="profile-normal" class="absolute w-full h-full object-contain opacity-0 transition-opacity duration-700 ease-in-out pointer-events-auto" alt="Zhafif Normal Version" onload="this.classList.remove('opacity-0'); document.getElementById('profile-normal-low').classList.add('opacity-0');">
+
+                        <div id="reveal-wrapper" class="absolute inset-0 w-full h-full pointer-events-none z-30">
+                            
+                            <img id="profile-robot" class="absolute w-full h-full object-contain" alt="Zhafif Robot Version">
+                            
+                            <img id="profile-artist" class="absolute w-full h-full object-contain" alt="Zhafif Artist Version">
+                            
+                        </div>
+
                     </div>
                 </div>
             </div>
 
             <div class="relative z-20">
-                <div id="Achievement" class="bg-[#1f202b] shadow-[0_0_50px_black] text-white flex flex-col items-center p-6 md:p-12 z-20 relative rounded-b-[2rem] rounded-t-lg">
-                    <div data-anime="fade-up" class="w-full flex flex-col items-center w-full">
 
-                       <div class="text-center mb-8">
+
+                <div id="Achievement" class="bg-[#1f202b] shadow-[0_0_50px_black] text-white flex flex-col items-center p-6 md:p-12 z-20 relative rounded-b-[2rem] rounded-t-lg">
+                    
+                    <div id="tech-marquee-container" class="relative overflow-hidden w-full py-10 pointer-events-none opacity-5">
+                        <div id="tech-marquee-content" class="flex whitespace-nowrap gap-16 text-5xl md:text-7xl font-black uppercase italic tracking-tighter"></div>
+                    </div>
+
+                    <div data-anime="fade-up" class="w-full flex flex-col items-center w-full">
+                       <div class="text-center mb-8 mt-20">
                             <p class="text-lg md:text-3xl lg:text-4xl font-light">Achievement</p>
                             <p class="text-[10px] md:text-base text-white/50">My Achievement I Did As Software Engineering Student In School</p>
                             <div class="flex flex-col w-full items-center mt-4">
@@ -178,10 +194,9 @@
                             <div class="swiper-button-next !text-white drop-shadow-md z-50"></div>
                             <div class="swiper-button-prev !text-white drop-shadow-md z-50"></div>
 
-                             <div class="absolute bottom-0 left-0 w-full h-16 sm:h-24 bg-gradient-to-t from-black/90 to-transparent z-30 pointer-events-none"></div>
-                                
-                                <div class="absolute inset-y-0 left-0 w-12 sm:w-20 bg-gradient-to-r from-black/70 to-transparent z-30 pointer-events-none"></div>
-                                <div class="absolute inset-y-0 right-0 w-12 sm:w-20 bg-gradient-to-l from-black/70 to-transparent z-30 pointer-events-none"></div>
+                            <div class="hidden lg:block absolute bottom-0 left-0 w-full h-16 sm:h-24 bg-gradient-to-t from-black/90 to-transparent z-30 pointer-events-none"></div>    
+                            <div class="hidden lg:block absolute inset-y-0 left-0 w-12 sm:w-20 bg-gradient-to-r from-black/70 to-transparent z-30 pointer-events-none"></div>
+                            <div class="hidden lg:block absolute inset-y-0 right-0 w-12 sm:w-20 bg-gradient-to-l from-black/70 to-transparent z-30 pointer-events-none"></div>
 
 
                             <div class="swiper-pagination z-50 mb-2"></div>
@@ -210,10 +225,6 @@
                         </div>
                     </div>
                 </div>  
-
-                <div class="w-full my-8">
-                    <hr class="border-white/20">
-                </div>
 
                 <div id="Creative" data-anime="fade-up" class="m-12 w-full">
                     <div class="text-center mb-8">
@@ -246,25 +257,32 @@
                                     Ready to <span class="text-blue-400">Collaborate?</span>
                                 </h2>
                                 <p class="text-gray-400 leading-relaxed mb-0">
-                                    Punya ide proyek robotika atau butuh bantuan software development? 
-                                    Langsung gas aja, kita diskusikan lewat email atau sosial media.
+                                    Have a project idea or need help with software development?
+                                    Contact me directly, let's discuss it over email or social media.
                                 </p>
                             </div>
 
-                            <div class="flex flex-col sm:flex-row gap-4 lg:justify-end">
+                            <div class="flex flex-col gap-4">
                                 
-                                <a href="mailto:bangz1504@gmail.com" 
-                                class="flex items-center justify-center gap-3 px-6 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl transition-all duration-300 transform hover:-translate-y-1 shadow-lg shadow-blue-900/20 font-medium">
-                                    <i class="bi bi-envelope-fill"></i>
-                                    <span>Email Me</span>
-                                </a>
+                                <div class="flex flex-col sm:flex-row gap-4 lg:justify-end">
+                                    <a data-social="Email" href="#" 
+                                    class="flex w-full items-center justify-center gap-3 px-6 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl transition-all duration-300 transform hover:-translate-y-1 shadow-lg shadow-blue-900/20 font-medium">
+                                        <i class="bi bi-envelope-fill"></i>
+                                        <span>Email Me</span>
+                                    </a>
 
-                                <a href="https://www.instagram.com/brotherzhafif/" target="_blank"
-                                class="flex items-center justify-center gap-3 px-6 py-4 bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-2xl transition-all duration-300 transform hover:-translate-y-1 font-medium">
-                                    <i class="bi bi-instagram text-pink-500"></i>
-                                    <span>Instagram</span>
+                                    <a data-social="Instagram" href="#" target="_blank"
+                                    class="flex w-full items-center justify-center gap-3 px-6 py-4 bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-2xl transition-all duration-300 transform hover:-translate-y-1 font-medium">
+                                        <i class="bi bi-instagram text-pink-500"></i>
+                                        <span>Instagram</span>
+                                    </a>
+                                </div>
+                                
+                                <a data-social="CV" id="link-cv" href="#"
+                                class="flex items-center justify-center gap-3 px-6 py-4 bg-gray-700 hover:bg-gray-600 text-white rounded-2xl transition-all duration-300 transform hover:-translate-y-1 shadow-lg shadow-gray-900/20 font-medium">
+                                    <i class="bi bi-download"></i>
+                                    <span>Download My CV</span>
                                 </a>
-
                             </div>
                         </div>
                     </div>
