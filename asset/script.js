@@ -1,4 +1,73 @@
 // ==========================================
+// SMART LIGHTBOX: PAUSE SWIPER & CUSTOM COUNTER
+// ==========================================
+function refreshLightbox() {
+	if (typeof customLightbox !== 'undefined' && customLightbox) {
+		customLightbox.destroy();
+	}
+
+	customLightbox = GLightbox({
+		selector: '.glightbox',
+		touchNavigation: true, // Ini udah otomatis bikin bisa di-swipe horizontal di HP
+		loop: true,
+		zoomable: true
+	});
+
+	// 1. AUTO-PAUSE: Matikan semua autoplay Swiper pas zoom dibuka
+	customLightbox.on('open', () => {
+		if (typeof certSwiper !== 'undefined' && certSwiper.autoplay) certSwiper.autoplay.stop();
+		if (typeof softwareSwiper !== 'undefined' && softwareSwiper.autoplay) softwareSwiper.autoplay.stop();
+		if (typeof creativeSwiper !== 'undefined' && creativeSwiper.autoplay) creativeSwiper.autoplay.stop();
+	});
+
+	// 2. AUTO-RESUME: Nyalakan lagi autoplay pas zoom ditutup
+	customLightbox.on('close', () => {
+		if (typeof certSwiper !== 'undefined' && certSwiper.autoplay) certSwiper.autoplay.start();
+		if (typeof softwareSwiper !== 'undefined' && softwareSwiper.autoplay) softwareSwiper.autoplay.start();
+		if (typeof creativeSwiper !== 'undefined' && creativeSwiper.autoplay) creativeSwiper.autoplay.start();
+
+		// Bersihkan UI indikator custom
+		const customCounter = document.getElementById('custom-g-counter');
+		if (customCounter) customCounter.remove();
+	});
+
+	// 3. UI INDIKATOR & SCROLLBAR: Update posisi gambar saat digeser
+	customLightbox.on('slide_changed', ({ prev, current }) => {
+		if (!current) return;
+
+		const total = customLightbox.elements.length; // Total multiple post
+		const index = current.slideIndex + 1; // Urutan ke berapa
+
+		// Kalau gambarnya cuma 1, nggak usah nampilin indikator
+		if (total <= 1) return;
+
+		let counterEl = document.getElementById('custom-g-counter');
+		if (!counterEl) {
+			counterEl = document.createElement('div');
+			counterEl.id = 'custom-g-counter';
+			// Posisi ditaruh di Kanan Atas, di bawah tombol Close bawaan
+			counterEl.className = 'absolute top-16 right-4 sm:right-8 z-[99999] font-mono text-xs sm:text-sm pointer-events-none flex flex-col items-end gap-1.5 opacity-0 transition-opacity duration-300';
+
+			const glightboxContainer = document.querySelector('.glightbox-container');
+			if (glightboxContainer) {
+				glightboxContainer.appendChild(counterEl);
+				setTimeout(() => counterEl.classList.remove('opacity-0'), 100);
+			}
+		}
+
+		// Tampilan Indikator Kanan Atas & Scrollbar (Progress Line)
+		counterEl.innerHTML = `
+            <div class="flex items-center gap-2 bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-lg text-white">
+                <i class="bi bi-images text-blue-400"></i> ${index} / ${total}
+            </div>
+            <div class="w-full h-1 bg-white/20 rounded-full overflow-hidden shadow-lg mt-1">
+                <div class="h-full bg-blue-500 transition-all duration-300" style="width: ${(index / total) * 100}%"></div>
+            </div>
+        `;
+	});
+}
+
+// ==========================================
 // LOGIKA SMART NAVBAR (CONTEXTUAL APPEARANCE)
 // ==========================================
 
@@ -394,8 +463,12 @@ function renderAchievements(posts) {
 		return;
 	}
 
+	// FIX: Deteksi layar tablet (768px - 1024px) untuk nampilin 4 item
+	const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+	const highlightCount = isTablet ? 4 : 3;
+
 	posts.forEach((post, index) => {
-		const isHighlight = index < 3;
+		const isHighlight = index < highlightCount;
 		const images = post.images || [];
 		if (images.length === 0) return;
 
@@ -405,8 +478,6 @@ function renderAchievements(posts) {
 
 		const hasMultiple = images.length > 1;
 		const galleryId = `achieve-${post.id}`;
-
-		// Cek apakah file adalah video
 		const isVideoUrl = highResUrl.match(/\.(mp4|webm|ogg)$/i);
 
 		let cardHTML = `
@@ -415,11 +486,19 @@ function renderAchievements(posts) {
                 <img src="${lowResUrl}" class="absolute inset-0 w-full h-full object-cover blur-md opacity-40 scale-110 z-0 transition-transform duration-500 group-hover:scale-125" alt="bg">
                 <div class="absolute inset-0 bg-black/50 z-0"></div>
 
-                ${post.year ? `
-                <div class="absolute top-3 left-3 z-30 bg-blue-600/80 backdrop-blur-sm text-white text-[10px] sm:text-xs px-2 py-1 rounded shadow-lg flex items-center gap-1 font-mono border border-blue-400/30">
-                    <i class="bi bi-calendar-event"></i> ${post.year}
+                <div class="absolute top-3 left-3 z-40 flex gap-2">
+                    ${post.year ? `
+                    <div class="bg-blue-600/80 backdrop-blur-sm text-white text-[10px] sm:text-xs px-2 py-1 rounded shadow-lg flex items-center gap-1 font-mono border border-blue-400/30">
+                        <i class="bi bi-calendar-event"></i> ${post.year}
+                    </div>
+                    ` : ''}
+                    
+                    ${post.link ? `
+                    <a href="${post.link}" target="_blank" class="bg-neutral-800/80 hover:bg-neutral-600 backdrop-blur-sm text-white text-[10px] sm:text-xs px-2 py-1 rounded shadow-lg flex items-center justify-center font-mono border border-neutral-500/50 transition-colors pointer-events-auto">
+                        <i class="bi bi-link-45deg text-sm"></i>
+                    </a>
+                    ` : ''}
                 </div>
-                ` : ''}
 
                 ${hasMultiple ? `
                 <div class="absolute top-3 right-3 z-30 bg-black/80 text-white text-[10px] sm:text-xs px-2 py-1 rounded shadow-lg flex items-center gap-1 font-mono border border-neutral-600">
@@ -428,9 +507,7 @@ function renderAchievements(posts) {
                 ` : ''}
 
                 <a href="${highResUrl}" class="glightbox relative z-20 h-[calc(100%-10px)] my-[5px] aspect-[5/3] group-hover:scale-105 transition-transform duration-300 shadow-[0_15px_40px_rgba(0,0,0,0.9)] rounded-md overflow-hidden bg-neutral-800 animate-pulse flex justify-center items-center" data-gallery="${galleryId}" data-title="${post.title} - ${post.year || ''}">
-                    
                     ${isVideoUrl ? `<i class="bi bi-play-circle text-4xl text-white/80 absolute z-30 drop-shadow-lg group-hover:scale-110 transition-transform"></i>` : ''}
-                    
                     <img src="${lowResUrl}" class="absolute inset-0 w-full h-full object-cover blur-sm z-10" onload="this.parentElement.classList.remove('animate-pulse')">
                     <img src="${highResUrl}" class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-700 z-20" onload="this.classList.remove('opacity-0'); this.previousElementSibling.classList.add('opacity-0');">
                 </a>
@@ -440,37 +517,22 @@ function renderAchievements(posts) {
                 </div>
         `;
 
-		// Trik GLightbox untuk gambar ke-2 dan seterusnya
 		if (hasMultiple) {
 			for (let i = 1; i < images.length; i++) {
 				cardHTML += `<a href="${images[i]}" class="glightbox hidden" data-gallery="${galleryId}" data-title="${post.title} - ${post.year || ''} (${i + 1}/${images.length})"></a>`;
 			}
 		}
-
 		cardHTML += `</div>`;
 
-		// Masukkan ke container yang tepat (Highlight atau Laci)
-		if (isHighlight) {
-			highlightContainer.innerHTML += cardHTML;
-		} else {
-			drawerContainer.innerHTML += cardHTML;
-		}
+		if (isHighlight) highlightContainer.innerHTML += cardHTML;
+		else drawerContainer.innerHTML += cardHTML;
 	});
 
-	// Munculkan tombol Show More kalau data lebih dari 3
-	if (posts.length > 3) {
+	if (posts.length > highlightCount) {
 		btnShowMore.classList.remove('hidden');
 	}
 
-	// Inisialisasi GLightbox baru setelah HTML selesai dirender
-	if (customLightbox) customLightbox.destroy(); // Hapus yang lama kalau ada
-	customLightbox = GLightbox({
-		selector: '.glightbox',
-		touchNavigation: true,
-		loop: true,
-		zoomable: true
-	});
-
+	refreshLightbox();
 	initAnimeScroll();
 }
 
@@ -623,19 +685,25 @@ function renderCertificates(posts) {
 
 	// Inisialisasi Swiper Sertifikat (Versi Mobile Friendly)
 	certSwiper = new Swiper(".mySwiper", {
-		slidesPerView: 1, // Fokus satu sertifikat per slide di HP
-		spaceBetween: 20,
+		// FIX MOBILE <= 430px: Dibuat 1.15 biar slide sebelahnya 'ngintip' sedikit
+		// Ini ngasih sinyal ke user kalau "Ini bisa digeser horizontal loh!"
+		slidesPerView: 1.15,
+		spaceBetween: 15,
 		centeredSlides: true,
-
-		// BIAR BISA GESER KIRI-KANAN DENGAN LANCAR:
-		loop: posts.length > 1, // Aktifkan loop HANYA jika sertifikat lebih dari 1
+		loop: posts.length > 1,
 		grabCursor: true,
-		allowTouchMove: true, // Pastikan sentuhan jari aktif
+		allowTouchMove: true,
 
-		// Hilangkan navigasi & pagination di layar kecil via Breakpoints
 		breakpoints: {
-			// Ketika lebar layar >= 768px (Tablet/Laptop)
+			// >= 431px (Phablet / HP agak lebar)
+			431: {
+				slidesPerView: 1,
+				spaceBetween: 20,
+			},
+			// >= 768px (Tablet/Laptop)
 			768: {
+				slidesPerView: 1,
+				spaceBetween: 20,
 				navigation: {
 					nextEl: ".swiper-button-next",
 					prevEl: ".swiper-button-prev",
@@ -646,17 +714,13 @@ function renderCertificates(posts) {
 				},
 			}
 		},
-
-		// Autoplay biar makin cakep
 		autoplay: {
 			delay: 3000,
 			disableOnInteraction: false,
 		},
 	});
 
-	if (customLightbox) customLightbox.destroy();
-	customLightbox = GLightbox({ selector: '.glightbox', touchNavigation: true, loop: true, zoomable: true });
-
+	refreshLightbox();
 	initAnimeScroll();
 }
 
@@ -714,11 +778,19 @@ function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
                 <img src="${lowResUrl}" class="absolute inset-0 w-full h-full object-cover blur-md opacity-40 scale-110 z-0 transition-transform duration-500 group-hover:scale-125" alt="bg">
                 <div class="absolute inset-0 bg-black/50 z-0"></div>
                 
-                ${post.year ? `
-                <div class="absolute bottom-3 left-3 z-30 bg-blue-600/80 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded shadow-lg flex items-center gap-1 font-mono border border-blue-400/30">
-                    <i class="bi bi-calendar-event"></i> ${post.year}
+                <div class="absolute bottom-3 left-3 z-40 flex gap-2">
+                    ${post.year ? `
+                    <div class="bg-blue-600/80 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded shadow-lg flex items-center gap-1 font-mono border border-blue-400/30">
+                        <i class="bi bi-calendar-event"></i> ${post.year}
+                    </div>
+                    ` : ''}
+
+                    ${post.link ? `
+                    <a href="${post.link}" target="_blank" class="bg-neutral-800/80 hover:bg-neutral-600 backdrop-blur-sm text-white text-[10px] sm:text-xs px-2 py-1 rounded shadow-lg flex items-center justify-center font-mono border border-neutral-500/50 transition-colors pointer-events-auto">
+                        <i class="bi bi-link-45deg text-sm"></i>
+                    </a>
+                    ` : ''}
                 </div>
-                ` : ''}
 
                 <a href="${highResUrl}" class="glightbox absolute inset-0 z-10 flex justify-center items-center group-hover:scale-105 transition-transform duration-300" data-gallery="${galleryId}" data-title="${post.title} - ${post.year || ''}">
                     
@@ -749,20 +821,27 @@ function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
 		wrapper.innerHTML += slideHTML;
 	});
 
-	// Inisialisasi Ulang Marquee (Gak ada ubahan di sini)
+	// Inisialisasi Ulang Marquee (INFINITE LOOP)
 	if (window[swiperVarName]) window[swiperVarName].destroy();
 	window[swiperVarName] = new Swiper(swiperSelector, {
 		slidesPerView: "auto",
 		spaceBetween: 20,
-		loop: posts.length > 3,
+
+		// FIX: Ini yang bikin dia ngeloop terus ke awal tanpa mentok
+		loop: true,
+
+		// FIX: Menggandakan slide di belakang layar biar loop-nya nyambung mulus di laptop
+		loopedSlides: 5,
+
 		speed: 4000,
-		autoplay: { delay: 0, disableOnInteraction: false },
+		autoplay: {
+			delay: 0, // Tanpa jeda, jalan terus
+			disableOnInteraction: false
+		},
 		allowTouchMove: true,
 	});
 
-	if (customLightbox) customLightbox.destroy();
-	customLightbox = GLightbox({ selector: '.glightbox', touchNavigation: true, loop: true, zoomable: true });
-
+	refreshLightbox();
 	initAnimeScroll();
 }
 
