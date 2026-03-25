@@ -764,56 +764,44 @@ async function fetchWorks() {
 }
 
 // Fungsi Dinamis Render Works (Software & Creative)
+// Fungsi Dinamis Render Works (Software & Creative) dengan Efek PING-PONG
 function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
-	const wrapper = document.getElementById(containerId);
-	wrapper.innerHTML = '';
+    const wrapper = document.getElementById(containerId);
+    wrapper.innerHTML = '';
 
-	if (!posts || posts.length === 0) {
-		wrapper.innerHTML = '<div class="w-full flex justify-center text-neutral-500">Belum ada karya.</div>';
-		return;
-	}
+    if (!posts || posts.length === 0) {
+        wrapper.innerHTML = '<div class="w-full flex justify-center text-neutral-500">Belum ada karya.</div>';
+        return;
+    }
 
-	// ==========================================
-	// SMART FIX: Gandakan secukupnya saja untuk memicu sistem "Recycle" Swiper
-	// ==========================================
-	let extendedPosts = [...posts];
+    // 1. LANGSUNG PAKAI DATA ASLI (Gak perlu digandakan/di-copy lagi)
+    posts.forEach((post) => {
+        const images = post.images || [];
+        const youtubeId = post.youtube_video_id; 
 
-	// Kalau karya aslimu kurang dari 6, kita copy secukupnya biar layar laptop penuh di detik pertama.
-	// Setelah itu, Swiper bakal ngurus sisanya (mindahin yang di kiri ke kanan) secara otomatis.
-	if (extendedPosts.length < 6) {
-		extendedPosts = [...posts, ...posts, ...posts];
-	}
+        // Kalau gak ada gambar DAN gak ada YouTube, baru skip
+        if (images.length === 0 && !youtubeId) return;
 
-	extendedPosts.forEach((post) => {
-		const images = post.images || [];
-		const youtubeId = post.youtube_video_id;
+        let highResUrl = '';
+        let lowResUrl = '';
 
-		// Kalau gak ada gambar DAN gak ada YouTube, baru skip
-		if (images.length === 0 && !youtubeId) return;
+        // TENTUKAN SUMBER GAMBAR
+        if (images.length > 0) {
+            highResUrl = images[0];
+            const lastDotIndex = highResUrl.lastIndexOf('.');
+            lowResUrl = highResUrl.substring(0, lastDotIndex) + '-low.webp';
+        } else if (youtubeId) {
+            highResUrl = `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`;
+            lowResUrl = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
+        }
 
-		let highResUrl = '';
-		let lowResUrl = '';
+        const hasMultiple = images.length > 1;
+        const galleryId = `work-${post.id}`;
+        const isVideoUrl = highResUrl.match(/\.(mp4|webm|ogg)$/i);
 
-		// TENTUKAN SUMBER GAMBAR
-		if (images.length > 0) {
-			// Ambil dari Supabase kalau ada file yang diupload
-			highResUrl = images[0];
-			const lastDotIndex = highResUrl.lastIndexOf('.');
-			lowResUrl = highResUrl.substring(0, lastDotIndex) + '-low.webp';
-		} else if (youtubeId) {
-			// Ambil thumbnail otomatis dari YouTube kalau gak ada file
-			highResUrl = `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`;
-			lowResUrl = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
-		}
+        const targetLightboxUrl = youtubeId ? `https://www.youtube.com/watch?v=${youtubeId}` : highResUrl;
 
-		const hasMultiple = images.length > 1;
-		const galleryId = `work-${post.id}`;
-		const isVideoUrl = highResUrl.match(/\.(mp4|webm|ogg)$/i);
-
-		// Target pas diklik: YouTube atau Gambar
-		const targetLightboxUrl = youtubeId ? `https://www.youtube.com/watch?v=${youtubeId}` : highResUrl;
-
-		let slideHTML = `
+        let slideHTML = `
             <div class="swiper-slide w-[280px] sm:w-[360px] lg:w-[400px] aspect-[4/3] flex justify-center items-center relative overflow-hidden bg-[#11121a] shadow-[0_0_20px_black] rounded-lg group mx-2 cursor-zoom-in">
                 
                 <img src="${lowResUrl}" class="absolute inset-0 w-full h-full object-cover blur-md opacity-40 scale-110 z-0 transition-transform duration-500 group-hover:scale-125" alt="bg">
@@ -852,31 +840,51 @@ function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
                 </div>
         `;
 
-		if (hasMultiple) {
-			for (let i = 1; i < images.length; i++) {
-				slideHTML += `<a href="${images[i]}" class="glightbox hidden" data-gallery="${galleryId}" data-title="${post.title} (${i + 1}/${images.length})"></a>`;
-			}
-		}
+        // Masukkan SEMUA gambar ke slider (termasuk sampul)
+        if (images.length > 0) {
+            for (let i = 0; i < images.length; i++) {
+                slideHTML += `<a href="${images[i]}" class="glightbox hidden" data-gallery="${galleryId}" data-title="${post.title} (Gbr ${i + 1}/${images.length})"></a>`;
+            }
+        }
 
-		slideHTML += `</div>`;
-		wrapper.innerHTML += slideHTML;
-	});
+        slideHTML += `</div>`;
+        wrapper.innerHTML += slideHTML;
+    });
 
-	// Inisialisasi Ulang Marquee
-	if (window[swiperVarName]) window[swiperVarName].destroy();
-	window[swiperVarName] = new Swiper(swiperSelector, {
-		slidesPerView: "auto",
-		spaceBetween: 20,
-		loop: true, // Swiper akan pakai logika bongkar-kiri pasang-kanan di sini
-		speed: 4000,
-		autoplay: { delay: 0, disableOnInteraction: false },
-		allowTouchMove: true,
-	});
+    // 2. INISIALISASI SWIPER (LOGIKA PING-PONG YOYO)
+    if (window[swiperVarName]) window[swiperVarName].destroy();
+    window[swiperVarName] = new Swiper(swiperSelector, {
+        slidesPerView: "auto",
+        spaceBetween: 20,
+        loop: false, // <-- MATIKAN LOOP BONGKAR PASANG
+        speed: 3500, // <-- Kecepatan pergerakan (semakin besar semakin pelan)
+        autoplay: { 
+            delay: 0, 
+            disableOnInteraction: false,
+            reverseDirection: false // Default mulai ke kanan
+        },
+        allowTouchMove: true,
+        on: {
+            reachEnd: function () {
+                // Saat mentok kanan, jeda 1 detik lalu balik ke kiri
+                setTimeout(() => {
+                    this.params.autoplay.reverseDirection = true;
+                    this.autoplay.start();
+                }, 1000); 
+            },
+            reachBeginning: function () {
+                // Saat mentok kiri, jeda 1 detik lalu maju lagi ke kanan
+                setTimeout(() => {
+                    this.params.autoplay.reverseDirection = false;
+                    this.autoplay.start();
+                }, 1000);
+            }
+        }
+    });
 
-	// Panggil fungsi Smart Lightbox (yang bikin auto-pause & indikator)
-	if (typeof refreshLightbox === "function") {
-		refreshLightbox();
-	}
+    if (typeof refreshLightbox === "function") {
+        refreshLightbox();
+    }
 }
 
 // Helper: Ubah teks "Nama | URL" menjadi tag <a> HTML
