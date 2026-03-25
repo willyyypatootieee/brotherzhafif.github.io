@@ -852,9 +852,9 @@ function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
                 </div>
         `;
 
-		if (images.length > 0) { // Cek apakah ada gambar sama sekali
-			for (let i = 0; i < images.length; i++) { // Mulai dari INDEX 0 (Gambar Pertama)
-				slideHTML += `<a href="${images[i]}" class="glightbox hidden" data-gallery="${galleryId}" data-title="${post.title} (Gbr ${i + 1}/${images.length})"></a>`;
+		if (hasMultiple) {
+			for (let i = 1; i < images.length; i++) {
+				slideHTML += `<a href="${images[i]}" class="glightbox hidden" data-gallery="${galleryId}" data-title="${post.title} (${i + 1}/${images.length})"></a>`;
 			}
 		}
 
