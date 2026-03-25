@@ -190,54 +190,69 @@ const isLowEndMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera
 // MESIN ANIMASI SCROLL ANTI-FLICKER (SIGMA VERSION)
 // ==========================================
 
+// ==========================================
+// MESIN ANIMASI SCROLL ANTI-FLICKER (SIGMA VERSION - FIXED FLIP LOGIC)
+// ==========================================
+
 const scrollObserver = new IntersectionObserver((entries) => {
 	entries.forEach(entry => {
 		const el = entry.target;
-
-		// Cek apakah elemen sudah punya status (biar gak bentrok)
 		const currentState = el.dataset.animState;
-
 		const animType = el.getAttribute('data-anime');
 		const delay = el.getAttribute('data-anime-delay') || 0;
-		const noFlip = el.hasAttribute('data-anime-no-flip');
-		const dirMultiplier = (isScrollingDown || noFlip || isLowEndMobile) ? 1 : -1;
+		const noFlip = el.hasAttribute('data-anime-no-flip'); // Deteksi kalau elemen dikunci arahnya
 
+		// 1. Tentukan Nilai Awal Default (Berdasarkan Atribut)
 		let startY = 0, startX = 0, startScale = 1;
-		if (animType === 'fade-up') startY = 50 * dirMultiplier;
-		if (animType === 'fade-right') startX = -50 * dirMultiplier;
-		if (animType === 'fade-left') startX = 50 * dirMultiplier;
+		if (animType === 'fade-up') startY = 50;
+		if (animType === 'fade-down') startY = -50;
+		if (animType === 'fade-right') startX = -50;
+		if (animType === 'fade-left') startX = 50;
 		if (animType === 'zoom-in') startScale = 0.8;
 
-		if (entry.isIntersecting) {
-			// JALANKAN HANYA JIKA statusnya bukan 'entering'
-			if (currentState === 'entering') return;
+		// 2. Siapkan Variabel Dinamis untuk Masuk (Enter) dan Keluar (Exit)
+		let enterY = startY, enterX = startX;
+		let exitY = startY, exitX = startX;
 
-			el.dataset.animState = 'entering'; // Tandai sedang masuk
+		// 3. LOGIKA FLIP (Hanya jalan kalau noFlip FALSE dan bukan HP kentang)
+		if (!noFlip && !isLowEndMobile) {
+			// Jika Scroll Bawah: Masuk dari Posisi Awal, Keluar ke Arah Sebaliknya (Minus)
+			// Jika Scroll Atas: Masuk dari Arah Sebaliknya (Minus), Keluar ke Posisi Awal
+			enterY = isScrollingDown ? startY : -startY;
+			enterX = isScrollingDown ? startX : -startX;
+
+			exitY = isScrollingDown ? -startY : startY;
+			exitX = isScrollingDown ? -startX : startX;
+		}
+
+		// 4. Eksekusi Animasi Masuk Layar (Show)
+		if (entry.isIntersecting) {
+			if (currentState === 'entering') return;
+			el.dataset.animState = 'entering';
 			anime.remove(el);
 
 			anime({
 				targets: el,
 				opacity: [0, 1],
-				translateY: [startY, 0],
-				translateX: [startX, 0],
+				translateY: [enterY, 0], // Gunakan dinamis masuk
+				translateX: [enterX, 0], // Gunakan dinamis masuk
 				scale: [startScale, 1],
 				duration: isLowEndMobile ? 400 : 1000,
 				delay: isLowEndMobile ? 0 : parseInt(delay),
 				easing: 'easeOutCubic'
 			});
-		} else {
-			// JALANKAN HANYA JIKA statusnya bukan 'leaving'
-			// Dan pastikan elemen memang sudah pernah masuk sebelumnya (biar gak flicker pas load)
-			if (currentState === 'leaving' || !currentState) return;
 
-			el.dataset.animState = 'leaving'; // Tandai sedang keluar
+			// 5. Eksekusi Animasi Keluar Layar (Hide)
+		} else {
+			if (currentState === 'leaving' || !currentState) return;
+			el.dataset.animState = 'leaving';
 			anime.remove(el);
 
 			anime({
 				targets: el,
 				opacity: 0,
-				translateY: startY,
-				translateX: startX,
+				translateY: exitY, // Gunakan dinamis keluar
+				translateX: exitX, // Gunakan dinamis keluar
 				scale: startScale,
 				duration: 500,
 				easing: 'easeInCubic'
@@ -246,8 +261,8 @@ const scrollObserver = new IntersectionObserver((entries) => {
 	});
 }, {
 	root: null,
-	rootMargin: '10px 0px', // Kasih ruang napas sedikit
-	threshold: 0.1 // Jangan 0, kasih 10% biar lebih stabil
+	rootMargin: '0px', // <-- Area tetep digedein biar di laptop mulus
+	threshold: 0.15
 });
 
 // Fungsi inisialisasi (Panggil ini di tiap render data dinamis!)
