@@ -764,6 +764,7 @@ async function fetchWorks() {
 }
 
 // Fungsi Dinamis Render Works (Software & Creative) dengan Spotify Effect
+// Fungsi Dinamis Render Works (Software & Creative)
 function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
 	const wrapper = document.getElementById(containerId);
 	wrapper.innerHTML = '';
@@ -773,7 +774,18 @@ function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
 		return;
 	}
 
-	posts.forEach((post) => {
+	// ==========================================
+	// FIX BRUTAL: ANTI BOLONG DI LAYAR LAPTOP
+	// ==========================================
+	// Kita gandakan isi array posts sampai minimal ada 10 box.
+	// Lebar 10 box = +/- 4000px (Sangat cukup buat layar 4K sekalipun!)
+	let extendedPosts = [...posts];
+	while (extendedPosts.length < 10) {
+		extendedPosts = extendedPosts.concat(posts);
+	}
+
+	// UBAH: Sekarang kita perulangan pakai 'extendedPosts', BUKAN 'posts' lagi
+	extendedPosts.forEach((post) => {
 		const images = post.images || [];
 		if (images.length === 0) return;
 
@@ -783,8 +795,6 @@ function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
 
 		const hasMultiple = images.length > 1;
 		const galleryId = `work-${post.id}`;
-
-		// Cek apakah file adalah video
 		const isVideoUrl = highResUrl.match(/\.(mp4|webm|ogg)$/i);
 
 		let slideHTML = `
@@ -795,7 +805,7 @@ function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
                 
                 <div class="absolute bottom-3 left-3 z-40 flex gap-2">
                     ${post.year ? `
-                    <div class="bg-blue-600/80 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded shadow-lg flex items-center gap-1 font-mono border border-blue-400/30">
+                    <div class="bg-blue-600/80 backdrop-blur-sm text-white text-[10px] sm:text-xs px-2 py-1 rounded shadow-lg flex items-center gap-1 font-mono border border-blue-400/30">
                         <i class="bi bi-calendar-event"></i> ${post.year}
                     </div>
                     ` : ''}
@@ -808,9 +818,7 @@ function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
                 </div>
 
                 <a href="${highResUrl}" class="glightbox absolute inset-0 z-10 flex justify-center items-center group-hover:scale-105 transition-transform duration-300" data-gallery="${galleryId}" data-title="${post.title} - ${post.year || ''}">
-                    
                     ${isVideoUrl ? `<i class="bi bi-play-circle text-4xl text-white/80 absolute z-30 drop-shadow-[0_0_15px_rgba(0,0,0,0.9)]"></i>` : ''}
-                    
                     <img src="${lowResUrl}" class="absolute w-full h-full object-contain blur-md z-10 p-5 sm:p-8 drop-shadow-[0_15px_40px_rgba(0,0,0,0.9)]">
                     <img src="${highResUrl}" class="absolute w-full h-full object-contain opacity-0 transition-opacity duration-700 z-20 p-2 sm:p-5 drop-shadow-[0_15px_40px_rgba(0,0,0,0.9)]" onload="this.classList.remove('opacity-0'); this.previousElementSibling.classList.add('opacity-0');">
                 </a>
@@ -836,28 +844,21 @@ function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
 		wrapper.innerHTML += slideHTML;
 	});
 
-	// Inisialisasi Ulang Marquee (INFINITE LOOP)
+	// Inisialisasi Ulang Marquee
 	if (window[swiperVarName]) window[swiperVarName].destroy();
 	window[swiperVarName] = new Swiper(swiperSelector, {
 		slidesPerView: "auto",
 		spaceBetween: 20,
-
-		// FIX: Ini yang bikin dia ngeloop terus ke awal tanpa mentok
-		loop: true,
-
-		// FIX: Menggandakan slide di belakang layar biar loop-nya nyambung mulus di laptop
-		loopedSlides: 5,
-
+		loop: true, // Pastikan ini true
 		speed: 4000,
-		autoplay: {
-			delay: 0, // Tanpa jeda, jalan terus
-			disableOnInteraction: false
-		},
+		autoplay: { delay: 0, disableOnInteraction: false },
 		allowTouchMove: true,
 	});
 
-	refreshLightbox();
-	initAnimeScroll();
+	// Panggil ulang Lightbox Smart kita
+	if (typeof refreshLightbox === "function") {
+		refreshLightbox();
+	}
 }
 
 // Helper: Ubah teks "Nama | URL" menjadi tag <a> HTML
