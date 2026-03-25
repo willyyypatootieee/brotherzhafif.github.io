@@ -786,15 +786,32 @@ function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
 
 	extendedPosts.forEach((post) => {
 		const images = post.images || [];
-		if (images.length === 0) return;
+		const youtubeId = post.youtube_video_id;
 
-		const highResUrl = images[0];
-		const lastDotIndex = highResUrl.lastIndexOf('.');
-		const lowResUrl = highResUrl.substring(0, lastDotIndex) + '-low.webp';
+		// Kalau gak ada gambar DAN gak ada YouTube, baru skip
+		if (images.length === 0 && !youtubeId) return;
+
+		let highResUrl = '';
+		let lowResUrl = '';
+
+		// TENTUKAN SUMBER GAMBAR
+		if (images.length > 0) {
+			// Ambil dari Supabase kalau ada file yang diupload
+			highResUrl = images[0];
+			const lastDotIndex = highResUrl.lastIndexOf('.');
+			lowResUrl = highResUrl.substring(0, lastDotIndex) + '-low.webp';
+		} else if (youtubeId) {
+			// Ambil thumbnail otomatis dari YouTube kalau gak ada file
+			highResUrl = `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`;
+			lowResUrl = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
+		}
 
 		const hasMultiple = images.length > 1;
 		const galleryId = `work-${post.id}`;
 		const isVideoUrl = highResUrl.match(/\.(mp4|webm|ogg)$/i);
+
+		// Target pas diklik: YouTube atau Gambar
+		const targetLightboxUrl = youtubeId ? `https://www.youtube.com/watch?v=${youtubeId}` : highResUrl;
 
 		let slideHTML = `
             <div class="swiper-slide w-[280px] sm:w-[360px] lg:w-[400px] aspect-[4/3] flex justify-center items-center relative overflow-hidden bg-[#11121a] shadow-[0_0_20px_black] rounded-lg group mx-2 cursor-zoom-in">
@@ -816,8 +833,10 @@ function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
                     ` : ''}
                 </div>
 
-                <a href="${highResUrl}" class="glightbox absolute inset-0 z-10 flex justify-center items-center group-hover:scale-105 transition-transform duration-300" data-gallery="${galleryId}" data-title="${post.title} - ${post.year || ''}">
-                    ${isVideoUrl ? `<i class="bi bi-play-circle text-4xl text-white/80 absolute z-30 drop-shadow-[0_0_15px_rgba(0,0,0,0.9)]"></i>` : ''}
+                <a href="${targetLightboxUrl}" class="glightbox absolute inset-0 z-10 flex justify-center items-center group-hover:scale-105 transition-transform duration-300" data-gallery="${galleryId}" data-title="${post.title} - ${post.year || ''}">
+                    
+                    ${(isVideoUrl || youtubeId) ? `<i class="bi bi-play-circle text-4xl text-white/80 absolute z-30 drop-shadow-[0_0_15px_rgba(0,0,0,0.9)]"></i>` : ''}
+                    
                     <img src="${lowResUrl}" class="absolute w-full h-full object-contain blur-md z-10 p-5 sm:p-8 drop-shadow-[0_15px_40px_rgba(0,0,0,0.9)]">
                     <img src="${highResUrl}" class="absolute w-full h-full object-contain opacity-0 transition-opacity duration-700 z-20 p-2 sm:p-5 drop-shadow-[0_15px_40px_rgba(0,0,0,0.9)]" onload="this.classList.remove('opacity-0'); this.previousElementSibling.classList.add('opacity-0');">
                 </a>
@@ -833,9 +852,9 @@ function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
                 </div>
         `;
 
-		if (hasMultiple) {
-			for (let i = 1; i < images.length; i++) {
-				slideHTML += `<a href="${images[i]}" class="glightbox hidden" data-gallery="${galleryId}" data-title="${post.title} (${i + 1}/${images.length})"></a>`;
+		if (images.length > 0) { // Cek apakah ada gambar sama sekali
+			for (let i = 0; i < images.length; i++) { // Mulai dari INDEX 0 (Gambar Pertama)
+				slideHTML += `<a href="${images[i]}" class="glightbox hidden" data-gallery="${galleryId}" data-title="${post.title} (Gbr ${i + 1}/${images.length})"></a>`;
 			}
 		}
 
