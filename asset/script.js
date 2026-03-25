@@ -763,7 +763,6 @@ async function fetchWorks() {
 	renderWorks(creativeData, 'creative-items', 'creativeSwiper', '.swiper-creative');
 }
 
-// Fungsi Dinamis Render Works (Software & Creative) dengan Spotify Effect
 // Fungsi Dinamis Render Works (Software & Creative)
 function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
 	const wrapper = document.getElementById(containerId);
@@ -775,16 +774,16 @@ function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
 	}
 
 	// ==========================================
-	// FIX BRUTAL: ANTI BOLONG DI LAYAR LAPTOP
+	// SMART FIX: Gandakan secukupnya saja untuk memicu sistem "Recycle" Swiper
 	// ==========================================
-	// Kita gandakan isi array posts sampai minimal ada 10 box.
-	// Lebar 10 box = +/- 4000px (Sangat cukup buat layar 4K sekalipun!)
 	let extendedPosts = [...posts];
-	while (extendedPosts.length < 10) {
-		extendedPosts = extendedPosts.concat(posts);
+
+	// Kalau karya aslimu kurang dari 6, kita copy secukupnya biar layar laptop penuh di detik pertama.
+	// Setelah itu, Swiper bakal ngurus sisanya (mindahin yang di kiri ke kanan) secara otomatis.
+	if (extendedPosts.length < 6) {
+		extendedPosts = [...posts, ...posts, ...posts];
 	}
 
-	// UBAH: Sekarang kita perulangan pakai 'extendedPosts', BUKAN 'posts' lagi
 	extendedPosts.forEach((post) => {
 		const images = post.images || [];
 		if (images.length === 0) return;
@@ -849,13 +848,13 @@ function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
 	window[swiperVarName] = new Swiper(swiperSelector, {
 		slidesPerView: "auto",
 		spaceBetween: 20,
-		loop: true, // Pastikan ini true
+		loop: true, // Swiper akan pakai logika bongkar-kiri pasang-kanan di sini
 		speed: 4000,
 		autoplay: { delay: 0, disableOnInteraction: false },
 		allowTouchMove: true,
 	});
 
-	// Panggil ulang Lightbox Smart kita
+	// Panggil fungsi Smart Lightbox (yang bikin auto-pause & indikator)
 	if (typeof refreshLightbox === "function") {
 		refreshLightbox();
 	}
