@@ -840,12 +840,11 @@ function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
                 </div>
         `;
 
-        // Masukkan SEMUA gambar ke slider (termasuk sampul)
-        if (images.length > 0) {
-            for (let i = 0; i < images.length; i++) {
-                slideHTML += `<a href="${images[i]}" class="glightbox hidden" data-gallery="${galleryId}" data-title="${post.title} (Gbr ${i + 1}/${images.length})"></a>`;
-            }
-        }
+		if (images.length > 1) {
+			for (let i = 1; i < images.length; i++) {
+				slideHTML += `<a href="${images[i]}" class="glightbox hidden" data-gallery="${galleryId}" data-title="${post.title} (Gbr ${i + 1}/${images.length})"></a>`;
+			}
+		}
 
         slideHTML += `</div>`;
         wrapper.innerHTML += slideHTML;
