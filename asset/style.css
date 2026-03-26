@@ -228,24 +228,3 @@ body {
     -webkit-mask-repeat: no-repeat;
     mask-repeat: no-repeat;
 }
-
-/* --- HINT ANIMATION --- */
-@keyframes flashHint {
-
-    0%,
-    100% {
-        -webkit-mask-size: 100% 100%;
-        mask-size: 100% 100%;
-        -webkit-mask-image: radial-gradient(circle at center, black 0%, transparent 0%);
-    }
-
-    10%,
-    30% {
-        /* Buka senter segede-gedenya pas hint */
-        -webkit-mask-image: radial-gradient(circle at center, black 100%, transparent 100%);
-    }
-}
-
-.flash-hint #reveal-wrapper {
-    animation: flashHint 1.5s ease-in-out;
-}

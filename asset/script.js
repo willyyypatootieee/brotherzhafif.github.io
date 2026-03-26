@@ -157,7 +157,7 @@ anime({
 	targets: '#global-loader .cube-wrapper',
 	rotateX: [0, 360],
 	rotateY: [0, 360],
-	duration: 3000,
+	duration: 10000,
 	loop: true,
 	easing: 'linear' // Putaran stabil gak pakai rem
 });
@@ -185,10 +185,6 @@ window.addEventListener('scroll', () => {
 
 // Detect if device is likely to struggle with animations
 const isLowEndMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-// ==========================================
-// MESIN ANIMASI SCROLL ANTI-FLICKER (SIGMA VERSION)
-// ==========================================
 
 // ==========================================
 // MESIN ANIMASI SCROLL ANTI-FLICKER (SIGMA VERSION - FIXED FLIP LOGIC)
@@ -275,7 +271,7 @@ function initAnimeScroll() {
 	});
 }
 
-// Fungsi Fallback: Jika dalam 3 detik loading selesai tapi animasi gak jalan, paksa muncul semua
+// Fungsi Fallback: Jika dalam 5 detik loading selesai tapi animasi gak jalan, paksa muncul semua
 function safetyNet() {
 	setTimeout(() => {
 		const firstElement = document.querySelector('[data-anime]');
@@ -283,7 +279,7 @@ function safetyNet() {
 			console.warn("Animation system failed or too slow. Activating fallback...");
 			document.body.classList.add('no-anime');
 		}
-	}, 3000);
+	}, 5000);
 }
 
 // Fungsi untuk memasang sensor (observer) ke semua elemen yang punya data-anime
@@ -306,15 +302,11 @@ function hideLoaderAndStartAnimation() {
 			globalLoader.classList.add('hidden');
 			initAnimeScroll();
 			safetyNet(); // Jalankan jaring pengaman
-		}, 700);
+		}, 10000);
 	}
 
 	// Start Efek Senter
 	initProfileFlashlight();
-
-	// Start Hint Animation (Interval 12 detik)
-	playProfileHint(); // Mainkan sekali di awal
-	setInterval(playProfileHint, 12000); // Mainkan terus setiap 12 detik
 }
 
 // INISIALISASI SUPABASE (GANTI DENGAN URL & KEY MILIKMU!)
@@ -322,27 +314,24 @@ const SUPABASE_URL = 'https://cequvuujxqkzguvxbpzg.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_TbMXWbW5nhIyUU7QlIayIg_quPVpE3g';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Fungsi untuk menarik data Profile
 // Fungsi untuk menarik data Profile & Mengontrol Full-Screen Loader
 async function fetchProfileData() {
 	const { data, error } = await supabaseClient
 		.from('me')
 		.select('*')
 		.limit(1)
-		.single(); // Mengambil 1 baris data saja
+		.single();
 
 	const globalLoader = document.getElementById('global-loader');
 
 	if (error) {
 		console.error("Gagal mengambil data profil:", error);
-		// Tetap hilangkan loader jika error agar web tidak freeze selamanya
 		globalLoader.style.opacity = '0';
-		setTimeout(() => globalLoader.classList.add('hidden'), 700);
+		setTimeout(() => globalLoader.classList.add('hidden'), 5000);
 		return;
 	}
 
 	if (data) {
-		// Suntikkan data dari database ke HTML
 		typeWriter('profile-name', data.name, 50);
 		document.getElementById('profile-alias').innerText = data.alias;
 		document.getElementById('profile-alias').title = data.alias;
@@ -351,13 +340,11 @@ async function fetchProfileData() {
 		document.getElementById('profile-org').title = data.organization;
 		typeWriter('profile-desc', data.description, 5);
 
-		// Suntikkan Data Footer Links
 		renderFooterLinks(data.footer_tech_1, 'tech-col-1');
 		renderFooterLinks(data.footer_tech_2, 'tech-col-2');
 		renderFooterLinks(data.footer_thanks, 'thanks-col');
 		renderFooterLinks(data.footer_social, 'social-col');
 
-		// Suntikkan Copyright Otomatis (Mengambil Nama & Alias dari DB)
 		const nameLink = document.getElementById('footer-name-link');
 		const aliasLink = document.getElementById('footer-alias-link');
 		const currentYear = new Date().getFullYear();
@@ -368,49 +355,71 @@ async function fetchProfileData() {
 		aliasLink.innerText = `©${currentYear} ${data.alias}`;
 		aliasLink.href = `https://www.google.com/search?q=${encodeURIComponent(data.alias)}`;
 
-		// Logika gambar profil 3 layer: robot (kiri), artist (kanan), normal (overlay senter)
-        const normalHighResUrl = data.normal_image_url; 
-        const robotHighResUrl = data.robot_image_url || normalHighResUrl;
-        const artistHighResUrl = data.artist_image_url || normalHighResUrl;
+		const normalHighResUrl = data.normal_image_url;
+		const robotHighResUrl = data.robot_image_url || normalHighResUrl;
+		const artistHighResUrl = data.artist_image_url || normalHighResUrl;
 
-        if (normalHighResUrl) {
-            // (Logika low-res kamu tetap aman karena file low-res juga ikut ke-migrate ke R2 tadi)
-            const lastDotIndex = normalHighResUrl.lastIndexOf('.');
-            const normalLowResUrl = normalHighResUrl.substring(0, lastDotIndex) + '-low.webp';
+		if (normalHighResUrl) {
+			const lastDotIndex = normalHighResUrl.lastIndexOf('.');
+			const normalLowResUrl = normalHighResUrl.substring(0, lastDotIndex) + '-low.webp';
 
-            const normalLow = document.getElementById('profile-normal-low');
-            const normalHigh = document.getElementById('profile-normal');
-            const robotImg = document.getElementById('profile-robot');
-            const artistImg = document.getElementById('profile-artist');
-            const favicon = document.getElementById('web-favicon');
+			const normalLow = document.getElementById('profile-normal-low');
+			const normalHigh = document.getElementById('profile-normal');
+			const robotImg = document.getElementById('profile-robot');
+			const artistImg = document.getElementById('profile-artist');
+			const favicon = document.getElementById('web-favicon');
 
-            if (robotImg && robotHighResUrl) robotImg.src = robotHighResUrl;
-            if (artistImg && artistHighResUrl) artistImg.src = artistHighResUrl;
+			if (robotImg && robotHighResUrl) robotImg.src = robotHighResUrl;
+			if (artistImg && artistHighResUrl) artistImg.src = artistHighResUrl;
 
-            if (normalLow) {
-                normalLow.onload = () => {
-                    hideLoaderAndStartAnimation();
-                };
-                // Jika gambar gagal dimuat (misal file -low.webp tidak ada), tetap jalankan web
-                normalLow.onerror = () => {
-                     hideLoaderAndStartAnimation();
-                };
-                normalLow.src = normalLowResUrl;
-            }
+			let assetsLoaded = 0;
+			const totalAssets = 3; // normalLow, normalHigh, CSS/JS libraries
 
-            if (normalHigh) {
-                normalHigh.onload = () => {
-                    normalHigh.classList.remove('opacity-0');
-                    if (normalLow) normalLow.classList.add('opacity-0');
-                };
-                normalHigh.src = normalHighResUrl;
-            }
+			const checkAllLoaded = () => {
+				assetsLoaded++;
+				if (assetsLoaded >= totalAssets) {
+					hideLoaderAndStartAnimation();
+				}
+			};
 
-            favicon.href = normalHighResUrl;
-        } else {
-            // Jika belum ada foto profile normal
-            hideLoaderAndStartAnimation();
-        }
+			// Check CSS & JS libraries loaded
+			const checkLibrariesLoaded = () => {
+				const requiredLibs = [
+					window.Swiper,
+					window.GLightbox,
+					window.anime,
+					window.supabase
+				];
+
+				const allLoaded = requiredLibs.every(lib => lib !== undefined);
+				if (allLoaded) {
+					checkAllLoaded();
+				} else {
+					setTimeout(checkLibrariesLoaded, 100);
+				}
+			};
+
+			if (normalLow) {
+				normalLow.onload = checkAllLoaded;
+				normalLow.onerror = checkAllLoaded;
+				normalLow.src = normalLowResUrl;
+			}
+
+			if (normalHigh) {
+				normalHigh.onload = () => {
+					normalHigh.classList.remove('opacity-0');
+					if (normalLow) normalLow.classList.add('opacity-0');
+					checkAllLoaded();
+				};
+				normalHigh.onerror = checkAllLoaded;
+				normalHigh.src = normalHighResUrl;
+			}
+
+			favicon.href = normalHighResUrl;
+			checkLibrariesLoaded();
+		} else {
+			hideLoaderAndStartAnimation();
+		}
 	}
 }
 
@@ -771,42 +780,42 @@ async function fetchWorks() {
 // Fungsi Dinamis Render Works (Software & Creative)
 // Fungsi Dinamis Render Works (Software & Creative) dengan Efek PING-PONG
 function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
-    const wrapper = document.getElementById(containerId);
-    wrapper.innerHTML = '';
+	const wrapper = document.getElementById(containerId);
+	wrapper.innerHTML = '';
 
-    if (!posts || posts.length === 0) {
-        wrapper.innerHTML = '<div class="w-full flex justify-center text-neutral-500">Belum ada karya.</div>';
-        return;
-    }
+	if (!posts || posts.length === 0) {
+		wrapper.innerHTML = '<div class="w-full flex justify-center text-neutral-500">Belum ada karya.</div>';
+		return;
+	}
 
-    // 1. LANGSUNG PAKAI DATA ASLI (Gak perlu digandakan/di-copy lagi)
-    posts.forEach((post) => {
-        const images = post.images || [];
-        const youtubeId = post.youtube_video_id; 
+	// 1. LANGSUNG PAKAI DATA ASLI (Gak perlu digandakan/di-copy lagi)
+	posts.forEach((post) => {
+		const images = post.images || [];
+		const youtubeId = post.youtube_video_id;
 
-        // Kalau gak ada gambar DAN gak ada YouTube, baru skip
-        if (images.length === 0 && !youtubeId) return;
+		// Kalau gak ada gambar DAN gak ada YouTube, baru skip
+		if (images.length === 0 && !youtubeId) return;
 
-        let highResUrl = '';
-        let lowResUrl = '';
+		let highResUrl = '';
+		let lowResUrl = '';
 
-        // TENTUKAN SUMBER GAMBAR
-        if (images.length > 0) {
-            highResUrl = images[0];
-            const lastDotIndex = highResUrl.lastIndexOf('.');
-            lowResUrl = highResUrl.substring(0, lastDotIndex) + '-low.webp';
-        } else if (youtubeId) {
-            highResUrl = `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`;
-            lowResUrl = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
-        }
+		// TENTUKAN SUMBER GAMBAR
+		if (images.length > 0) {
+			highResUrl = images[0];
+			const lastDotIndex = highResUrl.lastIndexOf('.');
+			lowResUrl = highResUrl.substring(0, lastDotIndex) + '-low.webp';
+		} else if (youtubeId) {
+			highResUrl = `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`;
+			lowResUrl = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
+		}
 
-        const hasMultiple = images.length > 1;
-        const galleryId = `work-${post.id}`;
-        const isVideoUrl = highResUrl.match(/\.(mp4|webm|ogg)$/i);
+		const hasMultiple = images.length > 1;
+		const galleryId = `work-${post.id}`;
+		const isVideoUrl = highResUrl.match(/\.(mp4|webm|ogg)$/i);
 
-        const targetLightboxUrl = youtubeId ? `https://www.youtube.com/watch?v=${youtubeId}` : highResUrl;
+		const targetLightboxUrl = youtubeId ? `https://www.youtube.com/watch?v=${youtubeId}` : highResUrl;
 
-        let slideHTML = `
+		let slideHTML = `
             <div class="swiper-slide w-[280px] sm:w-[360px] lg:w-[400px] aspect-[4/3] flex justify-center items-center relative overflow-hidden bg-[#11121a] shadow-[0_0_20px_black] rounded-lg group mx-2 cursor-zoom-in">
                 
                 <img src="${lowResUrl}" class="absolute inset-0 w-full h-full object-cover blur-md opacity-40 scale-110 z-0 transition-transform duration-500 group-hover:scale-125" alt="bg">
@@ -851,44 +860,44 @@ function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
 			}
 		}
 
-        slideHTML += `</div>`;
-        wrapper.innerHTML += slideHTML;
-    });
+		slideHTML += `</div>`;
+		wrapper.innerHTML += slideHTML;
+	});
 
-    // 2. INISIALISASI SWIPER (LOGIKA PING-PONG YOYO)
-    if (window[swiperVarName]) window[swiperVarName].destroy();
-    window[swiperVarName] = new Swiper(swiperSelector, {
-        slidesPerView: "auto",
-        spaceBetween: 20,
-        loop: false, // <-- MATIKAN LOOP BONGKAR PASANG
-        speed: 3500, // <-- Kecepatan pergerakan (semakin besar semakin pelan)
-        autoplay: { 
-            delay: 0, 
-            disableOnInteraction: false,
-            reverseDirection: false // Default mulai ke kanan
-        },
-        allowTouchMove: true,
-        on: {
-            reachEnd: function () {
-                // Saat mentok kanan, jeda 1 detik lalu balik ke kiri
-                setTimeout(() => {
-                    this.params.autoplay.reverseDirection = true;
-                    this.autoplay.start();
-                }, 1000); 
-            },
-            reachBeginning: function () {
-                // Saat mentok kiri, jeda 1 detik lalu maju lagi ke kanan
-                setTimeout(() => {
-                    this.params.autoplay.reverseDirection = false;
-                    this.autoplay.start();
-                }, 1000);
-            }
-        }
-    });
+	// 2. INISIALISASI SWIPER (LOGIKA PING-PONG YOYO)
+	if (window[swiperVarName]) window[swiperVarName].destroy();
+	window[swiperVarName] = new Swiper(swiperSelector, {
+		slidesPerView: "auto",
+		spaceBetween: 20,
+		loop: false, // <-- MATIKAN LOOP BONGKAR PASANG
+		speed: 3500, // <-- Kecepatan pergerakan (semakin besar semakin pelan)
+		autoplay: {
+			delay: 0,
+			disableOnInteraction: false,
+			reverseDirection: false // Default mulai ke kanan
+		},
+		allowTouchMove: true,
+		on: {
+			reachEnd: function () {
+				// Saat mentok kanan, jeda 1 detik lalu balik ke kiri
+				setTimeout(() => {
+					this.params.autoplay.reverseDirection = true;
+					this.autoplay.start();
+				}, 1000);
+			},
+			reachBeginning: function () {
+				// Saat mentok kiri, jeda 1 detik lalu maju lagi ke kanan
+				setTimeout(() => {
+					this.params.autoplay.reverseDirection = false;
+					this.autoplay.start();
+				}, 1000);
+			}
+		}
+	});
 
-    if (typeof refreshLightbox === "function") {
-        refreshLightbox();
-    }
+	if (typeof refreshLightbox === "function") {
+		refreshLightbox();
+	}
 }
 
 // Helper: Ubah teks "Nama | URL" menjadi tag <a> HTML
@@ -1011,23 +1020,6 @@ function initProfileFlashlight() {
 	container.addEventListener('touchmove', moveFlashlight, { passive: true });
 	container.addEventListener('mouseleave', hideFlashlight);
 	container.addEventListener('touchend', hideFlashlight);
-}
-
-// ==========================================
-// HINT ANIMATION (KELAP-KELIP SIGMA)
-// ==========================================
-// Kita panggil fungsi ini setiap 10-15 detik
-function playProfileHint() {
-	const container = document.querySelector('#profile-reveal-container div');
-	if (!container) return;
-
-	// Tambah class buat trigger CSS Animation
-	container.classList.add('flash-hint');
-
-	// Hapus class setelah animasi beres biar bisa dipanggil lagi
-	setTimeout(() => {
-		container.classList.remove('flash-hint');
-	}, 1600); // Sedikit lebih lama dari durasi animasi CSS (1.5s)
 }
 
 // ==========================================
