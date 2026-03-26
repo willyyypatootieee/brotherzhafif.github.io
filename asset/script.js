@@ -369,43 +369,48 @@ async function fetchProfileData() {
 		aliasLink.href = `https://www.google.com/search?q=${encodeURIComponent(data.alias)}`;
 
 		// Logika gambar profil 3 layer: robot (kiri), artist (kanan), normal (overlay senter)
-		const normalHighResUrl = data.normal_image_url || data.normal_image_url;
-		const robotHighResUrl = data.robot_image_url || normalHighResUrl;
-		const artistHighResUrl = data.artist_image_url || normalHighResUrl;
+        const normalHighResUrl = data.normal_image_url; 
+        const robotHighResUrl = data.robot_image_url || normalHighResUrl;
+        const artistHighResUrl = data.artist_image_url || normalHighResUrl;
 
-		if (normalHighResUrl && normalHighResUrl.includes('supabase.co')) {
-			const lastDotIndex = normalHighResUrl.lastIndexOf('.');
-			const normalLowResUrl = normalHighResUrl.substring(0, lastDotIndex) + '-low.webp';
+        if (normalHighResUrl) {
+            // (Logika low-res kamu tetap aman karena file low-res juga ikut ke-migrate ke R2 tadi)
+            const lastDotIndex = normalHighResUrl.lastIndexOf('.');
+            const normalLowResUrl = normalHighResUrl.substring(0, lastDotIndex) + '-low.webp';
 
-			const normalLow = document.getElementById('profile-normal-low');
-			const normalHigh = document.getElementById('profile-normal');
-			const robotImg = document.getElementById('profile-robot');
-			const artistImg = document.getElementById('profile-artist');
-			const favicon = document.getElementById('web-favicon');
+            const normalLow = document.getElementById('profile-normal-low');
+            const normalHigh = document.getElementById('profile-normal');
+            const robotImg = document.getElementById('profile-robot');
+            const artistImg = document.getElementById('profile-artist');
+            const favicon = document.getElementById('web-favicon');
 
-			if (robotImg && robotHighResUrl) robotImg.src = robotHighResUrl;
-			if (artistImg && artistHighResUrl) artistImg.src = artistHighResUrl;
+            if (robotImg && robotHighResUrl) robotImg.src = robotHighResUrl;
+            if (artistImg && artistHighResUrl) artistImg.src = artistHighResUrl;
 
-			if (normalLow) {
-				normalLow.onload = () => {
-					hideLoaderAndStartAnimation();
-				};
-				normalLow.src = normalLowResUrl;
-			}
+            if (normalLow) {
+                normalLow.onload = () => {
+                    hideLoaderAndStartAnimation();
+                };
+                // Jika gambar gagal dimuat (misal file -low.webp tidak ada), tetap jalankan web
+                normalLow.onerror = () => {
+                     hideLoaderAndStartAnimation();
+                };
+                normalLow.src = normalLowResUrl;
+            }
 
-			if (normalHigh) {
-				normalHigh.onload = () => {
-					normalHigh.classList.remove('opacity-0');
-					if (normalLow) normalLow.classList.add('opacity-0');
-				};
-				normalHigh.src = normalHighResUrl;
-			}
+            if (normalHigh) {
+                normalHigh.onload = () => {
+                    normalHigh.classList.remove('opacity-0');
+                    if (normalLow) normalLow.classList.add('opacity-0');
+                };
+                normalHigh.src = normalHighResUrl;
+            }
 
-			favicon.href = normalHighResUrl;
-		} else {
-			// Jika belum ada foto profile normal, langsung buka loading screen agar web tidak freeze
-			hideLoaderAndStartAnimation();
-		}
+            favicon.href = normalHighResUrl;
+        } else {
+            // Jika belum ada foto profile normal
+            hideLoaderAndStartAnimation();
+        }
 	}
 }
 
