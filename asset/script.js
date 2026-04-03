@@ -627,6 +627,52 @@ function toggleAchievementDrawer() {
 // Variable global untuk Swiper Certificate agar tidak bentrok
 let certSwiper;
 
+// Pause autoplay saat hover, lalu lanjut lagi saat mouse keluar dari area slider
+function bindSwiperPauseOnHover(swiperInstance) {
+	if (!swiperInstance || !swiperInstance.el || !swiperInstance.autoplay) return;
+
+	const freezeCurrentPosition = () => {
+		// Bekukan posisi saat ini supaya tidak lanjut jalan di background
+		const currentTranslate = swiperInstance.getTranslate();
+		swiperInstance.setTransition(0);
+		swiperInstance.setTranslate(currentTranslate);
+		swiperInstance.updateProgress(currentTranslate);
+		swiperInstance.updateActiveIndex();
+		swiperInstance.updateSlidesClasses();
+	};
+
+	const swiperEl = swiperInstance.el;
+	if (swiperEl.dataset.hoverPauseBound === 'true') return;
+	swiperEl.dataset.hoverPauseBound = 'true';
+	swiperInstance.__isHoverPaused = false;
+
+	const pauseHandler = () => {
+		swiperInstance.__isHoverPaused = true;
+		if (swiperInstance.__directionTimer) {
+			clearTimeout(swiperInstance.__directionTimer);
+			swiperInstance.__directionTimer = null;
+		}
+		freezeCurrentPosition();
+		if (swiperInstance.autoplay.running) {
+			if (typeof swiperInstance.autoplay.pause === 'function') swiperInstance.autoplay.pause();
+			else swiperInstance.autoplay.stop();
+		}
+	};
+
+	const resumeHandler = () => {
+		swiperInstance.__isHoverPaused = false;
+		if (typeof swiperInstance.autoplay.resume === 'function') swiperInstance.autoplay.resume();
+		else swiperInstance.autoplay.start();
+	};
+
+	swiperEl.addEventListener('mouseenter', pauseHandler);
+	swiperEl.addEventListener('mouseleave', resumeHandler);
+
+	// Fallback untuk device/engine yang lebih konsisten dengan pointer events
+	swiperEl.addEventListener('pointerenter', pauseHandler);
+	swiperEl.addEventListener('pointerleave', resumeHandler);
+}
+
 // Fungsi Mengambil Data Sertifikat
 async function fetchCertificates() {
 	const { data, error } = await supabaseClient
@@ -749,6 +795,8 @@ function renderCertificates(posts) {
 		},
 	});
 
+	bindSwiperPauseOnHover(certSwiper);
+
 	refreshLightbox();
 	initAnimeScroll();
 }
@@ -869,8 +917,10 @@ function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
 	window[swiperVarName] = new Swiper(swiperSelector, {
 		slidesPerView: "auto",
 		spaceBetween: 20,
+		slidesOffsetBefore: 0,
+		slidesOffsetAfter: -90,
 		loop: false, // <-- MATIKAN LOOP BONGKAR PASANG
-		speed: 3500, // <-- Kecepatan pergerakan (semakin besar semakin pelan)
+		speed: 500, // <-- Kecepatan pergerakan (semakin besar semakin pelan)
 		autoplay: {
 			delay: 0,
 			disableOnInteraction: false,
@@ -880,20 +930,26 @@ function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
 		on: {
 			reachEnd: function () {
 				// Saat mentok kanan, jeda 1 detik lalu balik ke kiri
-				setTimeout(() => {
+				if (this.__directionTimer) clearTimeout(this.__directionTimer);
+				this.__directionTimer = setTimeout(() => {
+					if (this.__isHoverPaused) return;
 					this.params.autoplay.reverseDirection = true;
 					this.autoplay.start();
 				}, 1000);
 			},
 			reachBeginning: function () {
 				// Saat mentok kiri, jeda 1 detik lalu maju lagi ke kanan
-				setTimeout(() => {
+				if (this.__directionTimer) clearTimeout(this.__directionTimer);
+				this.__directionTimer = setTimeout(() => {
+					if (this.__isHoverPaused) return;
 					this.params.autoplay.reverseDirection = false;
 					this.autoplay.start();
 				}, 1000);
 			}
 		}
 	});
+
+	bindSwiperPauseOnHover(window[swiperVarName]);
 
 	if (typeof refreshLightbox === "function") {
 		refreshLightbox();
