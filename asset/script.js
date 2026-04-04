@@ -804,6 +804,31 @@ function renderCertificates(posts) {
 // Variable Global untuk Swiper Marquee
 let softwareSwiper, creativeSwiper;
 
+const WORKS_SWIPER_SPEED = 5000;
+const WORKS_SWIPER_FLIP_DELAY = 1000;
+
+function flipSwiperDirection(swiperInstance, reverseDirection) {
+	if (!swiperInstance || swiperInstance.__isHoverPaused) return;
+
+	// Pastikan speed tetap konsisten saat ganti arah.
+	swiperInstance.params.speed = WORKS_SWIPER_SPEED;
+	if (swiperInstance.originalParams) {
+		swiperInstance.originalParams.speed = WORKS_SWIPER_SPEED;
+	}
+
+	if (swiperInstance.params.autoplay) {
+		swiperInstance.params.autoplay.reverseDirection = reverseDirection;
+	}
+	if (swiperInstance.originalParams && swiperInstance.originalParams.autoplay) {
+		swiperInstance.originalParams.autoplay.reverseDirection = reverseDirection;
+	}
+
+	if (swiperInstance.autoplay && swiperInstance.autoplay.running) {
+		swiperInstance.autoplay.stop();
+	}
+	swiperInstance.autoplay.start();
+}
+
 // Fungsi Menarik Data Works (Software & Creative)
 async function fetchWorks() {
 	const { data, error } = await supabaseClient
@@ -917,10 +942,9 @@ function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
 	window[swiperVarName] = new Swiper(swiperSelector, {
 		slidesPerView: "auto",
 		spaceBetween: 20,
-		slidesOffsetBefore: 0,
-		slidesOffsetAfter: -90,
-		loop: false, // <-- MATIKAN LOOP BONGKAR PASANG
-		speed: 500, // <-- Kecepatan pergerakan (semakin besar semakin pelan)
+		slidesOffsetBefore: 500,
+		slidesOffsetAfter: 0,
+		speed: WORKS_SWIPER_SPEED, // <-- Kecepatan pergerakan (semakin besar semakin pelan)
 		autoplay: {
 			delay: 0,
 			disableOnInteraction: false,
@@ -932,19 +956,15 @@ function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
 				// Saat mentok kanan, jeda 1 detik lalu balik ke kiri
 				if (this.__directionTimer) clearTimeout(this.__directionTimer);
 				this.__directionTimer = setTimeout(() => {
-					if (this.__isHoverPaused) return;
-					this.params.autoplay.reverseDirection = true;
-					this.autoplay.start();
-				}, 1000);
+					flipSwiperDirection(this, true);
+				}, WORKS_SWIPER_FLIP_DELAY);
 			},
 			reachBeginning: function () {
 				// Saat mentok kiri, jeda 1 detik lalu maju lagi ke kanan
 				if (this.__directionTimer) clearTimeout(this.__directionTimer);
 				this.__directionTimer = setTimeout(() => {
-					if (this.__isHoverPaused) return;
-					this.params.autoplay.reverseDirection = false;
-					this.autoplay.start();
-				}, 1000);
+					flipSwiperDirection(this, false);
+				}, WORKS_SWIPER_FLIP_DELAY);
 			}
 		}
 	});
