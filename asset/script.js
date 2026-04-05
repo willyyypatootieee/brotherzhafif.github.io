@@ -187,6 +187,269 @@ window.addEventListener('scroll', () => {
 const isLowEndMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
 // ==========================================
+// SMART IMAGE QUEUE (LOW FIRST + VISIBILITY PRIORITY)
+// ==========================================
+
+const smartImageLoader = (() => {
+	const MAX_CONCURRENT = 4;
+	const pendingJobs = [];
+	let activeLoads = 0;
+
+	const supportsIO = typeof IntersectionObserver !== 'undefined';
+	const jobMap = new WeakMap();
+
+	const visibilityObserver = supportsIO
+		? new IntersectionObserver((entries) => {
+			entries.forEach((entry) => {
+				const job = jobMap.get(entry.target);
+				if (!job || job.done) return;
+				job.isVisible = entry.isIntersecting;
+				schedule();
+			});
+		}, { threshold: 0.01 })
+		: null;
+
+	const isElementVisible = (el) => {
+		if (!el || !el.getBoundingClientRect) return false;
+		const rect = el.getBoundingClientRect();
+		return rect.bottom > 0 && rect.right > 0 && rect.top < window.innerHeight && rect.left < window.innerWidth;
+	};
+
+	const observeVisibility = (job) => {
+		if (!job.el) return;
+		job.isVisible = isElementVisible(job.el);
+		if (visibilityObserver) {
+			jobMap.set(job.el, job);
+			visibilityObserver.observe(job.el);
+		}
+	};
+
+	const unobserveVisibility = (job) => {
+		if (!job.el || !visibilityObserver) return;
+		visibilityObserver.unobserve(job.el);
+	};
+
+	const enqueue = (job) => {
+		if (!job || !job.src || !job.el) return null;
+
+		const normalizedJob = {
+			...job,
+			done: false,
+			loading: false,
+			isVisible: false,
+			priority: Number.isFinite(job.priority) ? job.priority : 0,
+			dependsOn: job.dependsOn || null,
+			onLoaded: job.onLoaded || null,
+			onError: job.onError || null
+		};
+
+		pendingJobs.push(normalizedJob);
+		observeVisibility(normalizedJob);
+		schedule();
+		return normalizedJob;
+	};
+
+	const getReadyJobs = () => pendingJobs.filter(job => !job.done && !job.loading && (!job.dependsOn || job.dependsOn.done));
+
+	const pickHighestPriority = (jobs) => {
+		if (!jobs || jobs.length === 0) return null;
+
+		let best = jobs[0];
+		for (let i = 1; i < jobs.length; i++) {
+			if ((jobs[i].priority || 0) > (best.priority || 0)) {
+				best = jobs[i];
+			}
+		}
+
+		return best;
+	};
+
+	const takeNextJob = () => {
+		const ready = getReadyJobs();
+		if (ready.length === 0) return null;
+
+		const lowVisible = ready.filter(job => job.tier === 'low' && job.isVisible);
+		const lowHidden = ready.filter(job => job.tier === 'low' && !job.isVisible);
+		const highVisible = ready.filter(job => job.tier === 'high' && job.isVisible);
+		const highHidden = ready.filter(job => job.tier === 'high' && !job.isVisible);
+
+		// Priority order:
+		// 1) low-webp visible
+		// 2) low-webp hidden
+		// 3) high-res visible
+		// 4) high-res hidden (async when no higher priority jobs)
+		return (
+			pickHighestPriority(lowVisible) ||
+			pickHighestPriority(lowHidden) ||
+			pickHighestPriority(highVisible) ||
+			pickHighestPriority(highHidden) ||
+			null
+		);
+	};
+
+	const finalizeJob = (job, callback) => {
+		job.done = true;
+		job.loading = false;
+		activeLoads = Math.max(0, activeLoads - 1);
+		unobserveVisibility(job);
+
+		if (typeof callback === 'function') callback();
+		schedule();
+	};
+
+	const loadJob = (job) => {
+		job.loading = true;
+		activeLoads += 1;
+
+		const img = new Image();
+		img.decoding = 'async';
+
+		img.onload = () => {
+			if (job.el && job.el.isConnected) {
+				job.el.src = job.src;
+			}
+			finalizeJob(job, () => {
+				if (typeof job.onLoaded === 'function') job.onLoaded();
+			});
+		};
+
+		img.onerror = () => {
+			finalizeJob(job, () => {
+				if (typeof job.onError === 'function') job.onError();
+			});
+		};
+
+		img.src = job.src;
+	};
+
+	const schedule = () => {
+		while (activeLoads < MAX_CONCURRENT) {
+			const nextJob = takeNextJob();
+			if (!nextJob) break;
+			loadJob(nextJob);
+		}
+	};
+
+	window.addEventListener('scroll', schedule, { passive: true });
+	window.addEventListener('resize', schedule);
+
+	return {
+		enqueue
+	};
+})();
+
+function queueSmartImagePair({ lowEl, highEl, lowSrc, highSrc, onLowLoaded, onHighLoaded, onLowError, onHighError, lowPriority = 0, highPriority = 0 }) {
+	let lowJob = null;
+
+	if (lowEl && lowSrc) {
+		lowEl.dataset.smartRegistered = 'true';
+		lowJob = smartImageLoader.enqueue({
+			el: lowEl,
+			src: lowSrc,
+			tier: 'low',
+			priority: lowPriority,
+			onLoaded: onLowLoaded,
+			onError: onLowError
+		});
+	}
+
+	if (highEl && highSrc) {
+		highEl.dataset.smartRegistered = 'true';
+		smartImageLoader.enqueue({
+			el: highEl,
+			src: highSrc,
+			tier: 'high',
+			priority: highPriority,
+			dependsOn: lowJob,
+			onLoaded: () => {
+				highEl.classList.remove('opacity-0');
+				if (lowEl) lowEl.classList.add('opacity-0');
+				if (typeof onHighLoaded === 'function') onHighLoaded();
+			},
+			onError: onHighError
+		});
+	}
+}
+
+function queueLowImage(el, src, onLoaded, onError, priority = 0) {
+	if (!el || !src) return;
+	el.dataset.smartRegistered = 'true';
+	smartImageLoader.enqueue({
+		el,
+		src,
+		tier: 'low',
+		priority,
+		onLoaded,
+		onError
+	});
+}
+
+function queueHighImage(el, src, onLoaded, onError, priority = 0) {
+	if (!el || !src) return;
+	el.dataset.smartRegistered = 'true';
+	smartImageLoader.enqueue({
+		el,
+		src,
+		tier: 'high',
+		priority,
+		onLoaded,
+		onError
+	});
+}
+
+function registerSmartImagesInContainer(container) {
+	if (!container) return;
+
+	container.querySelectorAll('[data-smart-pair]').forEach(pairEl => {
+		if (pairEl.dataset.smartRegistered === 'true') return;
+		pairEl.dataset.smartRegistered = 'true';
+
+		const lowEl = pairEl.querySelector('[data-smart-role="low"]');
+		const highEl = pairEl.querySelector('[data-smart-role="high"]');
+		const lowSrc = lowEl ? lowEl.getAttribute('data-smart-src') : '';
+		const highSrc = highEl ? highEl.getAttribute('data-smart-src') : '';
+		const lowAlreadyRegistered = !!(lowEl && lowEl.dataset.smartRegistered === 'true');
+		const highAlreadyRegistered = !!(highEl && highEl.dataset.smartRegistered === 'true');
+
+		if (lowAlreadyRegistered && !highAlreadyRegistered && highEl && highSrc) {
+			queueHighImage(highEl, highSrc, () => {
+				highEl.classList.remove('opacity-0');
+				if (lowEl) lowEl.classList.add('opacity-0');
+			});
+			return;
+		}
+
+		if (!lowAlreadyRegistered && highAlreadyRegistered && lowEl && lowSrc) {
+			queueLowImage(lowEl, lowSrc);
+			return;
+		}
+
+		if (lowAlreadyRegistered && highAlreadyRegistered) {
+			return;
+		}
+
+		queueSmartImagePair({
+			lowEl,
+			highEl,
+			lowSrc,
+			highSrc
+		});
+	});
+
+	container.querySelectorAll('[data-smart-role="low-only"]').forEach(lowOnlyEl => {
+		if (lowOnlyEl.dataset.smartRegistered === 'true') return;
+		lowOnlyEl.dataset.smartRegistered = 'true';
+		queueLowImage(lowOnlyEl, lowOnlyEl.getAttribute('data-smart-src'));
+	});
+
+	container.querySelectorAll('[data-smart-role="high-only"]').forEach(highOnlyEl => {
+		if (highOnlyEl.dataset.smartRegistered === 'true') return;
+		highOnlyEl.dataset.smartRegistered = 'true';
+		queueHighImage(highOnlyEl, highOnlyEl.getAttribute('data-smart-src'));
+	});
+}
+
+// ==========================================
 // MESIN ANIMASI SCROLL ANTI-FLICKER (SIGMA VERSION - FIXED FLIP LOGIC)
 // ==========================================
 
@@ -369,11 +632,8 @@ async function fetchProfileData() {
 			const artistImg = document.getElementById('profile-artist');
 			const favicon = document.getElementById('web-favicon');
 
-			if (robotImg && robotHighResUrl) robotImg.src = robotHighResUrl;
-			if (artistImg && artistHighResUrl) artistImg.src = artistHighResUrl;
-
 			let assetsLoaded = 0;
-			const totalAssets = 3; // normalLow, normalHigh, CSS/JS libraries
+			const totalAssets = 2; // normalLow + CSS/JS libraries
 
 			const checkAllLoaded = () => {
 				assetsLoaded++;
@@ -399,20 +659,34 @@ async function fetchProfileData() {
 				}
 			};
 
-			if (normalLow) {
-				normalLow.onload = checkAllLoaded;
-				normalLow.onerror = checkAllLoaded;
-				normalLow.src = normalLowResUrl;
+			let hasCountedProfileLow = false;
+			const markProfileLowLoaded = () => {
+				if (hasCountedProfileLow) return;
+				hasCountedProfileLow = true;
+				checkAllLoaded();
+			};
+
+			queueSmartImagePair({
+				lowEl: normalLow,
+				highEl: normalHigh,
+				lowSrc: normalLowResUrl,
+				highSrc: normalHighResUrl,
+				lowPriority: 1000,
+				highPriority: 900,
+				onLowLoaded: markProfileLowLoaded,
+				onLowError: markProfileLowLoaded
+			});
+
+			if (!normalLow) {
+				markProfileLowLoaded();
 			}
 
-			if (normalHigh) {
-				normalHigh.onload = () => {
-					normalHigh.classList.remove('opacity-0');
-					if (normalLow) normalLow.classList.add('opacity-0');
-					checkAllLoaded();
-				};
-				normalHigh.onerror = checkAllLoaded;
-				normalHigh.src = normalHighResUrl;
+			if (robotImg && robotHighResUrl) {
+				queueHighImage(robotImg, robotHighResUrl, null, null, 850);
+			}
+
+			if (artistImg && artistHighResUrl) {
+				queueHighImage(artistImg, artistHighResUrl, null, null, 840);
 			}
 
 			favicon.href = normalHighResUrl;
@@ -512,7 +786,7 @@ function renderAchievements(posts) {
 		let cardHTML = `
             <div data-aos="${isHighlight ? 'fade-up' : ''}" class="bg-[#11121a] rounded-lg relative overflow-hidden group aspect-[4/3] w-full flex items-center justify-center border border-transparent hover:border-neutral-500 transition-colors shadow-[0_0_20px_rgba(0,0,0,0.5)] cursor-zoom-in">
                 
-                <img src="${lowResUrl}" class="absolute inset-0 w-full h-full object-cover blur-md opacity-40 scale-110 z-0 transition-transform duration-500 group-hover:scale-125" alt="bg">
+				<img data-smart-role="low-only" data-smart-src="${lowResUrl}" class="absolute inset-0 w-full h-full object-cover blur-md opacity-40 scale-110 z-0 transition-transform duration-500 group-hover:scale-125" alt="bg">
                 <div class="absolute inset-0 bg-black/50 z-0"></div>
 
                 <div class="absolute top-3 left-3 z-40 flex gap-2">
@@ -535,10 +809,12 @@ function renderAchievements(posts) {
                 </div>
                 ` : ''}
 
-                <a href="${highResUrl}" class="glightbox relative z-20 h-[calc(100%-10px)] my-[5px] aspect-[5/3] group-hover:scale-105 transition-transform duration-300 shadow-[0_15px_40px_rgba(0,0,0,0.9)] rounded-md overflow-hidden bg-neutral-800 animate-pulse flex justify-center items-center" data-gallery="${galleryId}" data-title="${post.title} - ${post.year || ''}">
+				<a href="${highResUrl}" class="glightbox relative z-20 h-[calc(100%-10px)] my-[5px] aspect-[5/3] group-hover:scale-105 transition-transform duration-300 shadow-[0_15px_40px_rgba(0,0,0,0.9)] rounded-md overflow-hidden bg-neutral-800 animate-pulse flex justify-center items-center" data-gallery="${galleryId}" data-title="${post.title} - ${post.year || ''}">
                     ${isVideoUrl ? `<i class="bi bi-play-circle text-4xl text-white/80 absolute z-30 drop-shadow-lg group-hover:scale-110 transition-transform"></i>` : ''}
-                    <img src="${lowResUrl}" class="absolute inset-0 w-full h-full object-cover blur-sm z-10" onload="this.parentElement.classList.remove('animate-pulse')">
-                    <img src="${highResUrl}" class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-700 z-20" onload="this.classList.remove('opacity-0'); this.previousElementSibling.classList.add('opacity-0');">
+					<div data-smart-pair class="absolute inset-0 w-full h-full z-10">
+						<img data-smart-role="low" data-smart-src="${lowResUrl}" class="absolute inset-0 w-full h-full object-cover blur-sm z-10">
+						<img data-smart-role="high" data-smart-src="${highResUrl}" class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-700 z-20">
+					</div>
                 </a>
 
                 <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/90 via-black/70 to-transparent p-4 pt-16 z-30 flex flex-col items-center text-center pointer-events-none">
@@ -556,6 +832,39 @@ function renderAchievements(posts) {
 		if (isHighlight) highlightContainer.innerHTML += cardHTML;
 		else drawerContainer.innerHTML += cardHTML;
 	});
+
+	highlightContainer.querySelectorAll('.animate-pulse [data-smart-pair]').forEach(pairEl => {
+		const lowEl = pairEl.querySelector('[data-smart-role="low"]');
+		if (!lowEl) return;
+
+		queueLowImage(
+			lowEl,
+			lowEl.getAttribute('data-smart-src'),
+			() => {
+				const cardAnchor = pairEl.closest('a.animate-pulse');
+				if (cardAnchor) cardAnchor.classList.remove('animate-pulse');
+			}
+		);
+		lowEl.dataset.smartRegistered = 'true';
+	});
+
+	drawerContainer.querySelectorAll('.animate-pulse [data-smart-pair]').forEach(pairEl => {
+		const lowEl = pairEl.querySelector('[data-smart-role="low"]');
+		if (!lowEl) return;
+
+		queueLowImage(
+			lowEl,
+			lowEl.getAttribute('data-smart-src'),
+			() => {
+				const cardAnchor = pairEl.closest('a.animate-pulse');
+				if (cardAnchor) cardAnchor.classList.remove('animate-pulse');
+			}
+		);
+		lowEl.dataset.smartRegistered = 'true';
+	});
+
+	registerSmartImagesInContainer(highlightContainer);
+	registerSmartImagesInContainer(drawerContainer);
 
 	if (posts.length > highlightCount) {
 		btnShowMore.classList.remove('hidden');
@@ -717,7 +1026,7 @@ function renderCertificates(posts) {
 		let slideHTML = `
             <div class="swiper-slide w-full h-full flex justify-center items-center relative overflow-hidden bg-[#1f202b] rounded-lg group cursor-zoom-in">
                 
-                <img src="${lowResUrl}" class="absolute inset-0 w-full h-full object-cover blur-md opacity-40 scale-110 z-0 transition-transform duration-500 group-hover:scale-125" alt="bg">
+				<img data-smart-role="low-only" data-smart-src="${lowResUrl}" class="absolute inset-0 w-full h-full object-cover blur-md opacity-40 scale-110 z-0 transition-transform duration-500 group-hover:scale-125" alt="bg">
                 <div class="absolute inset-0 bg-black/50 z-0"></div>
 
                 ${cert.year ? `
@@ -730,8 +1039,10 @@ function renderCertificates(posts) {
                     
                     ${isVideoUrl ? `<i class="bi bi-play-circle text-5xl text-white/80 absolute z-30 drop-shadow-[0_0_15px_rgba(0,0,0,0.9)]"></i>` : ''}
                     
-                    <img src="${lowResUrl}" class="absolute w-full h-full object-contain blur-md z-10 p-6 sm:p-10 drop-shadow-[0_15px_40px_rgba(0,0,0,0.9)]">
-                    <img src="${highResUrl}" class="absolute w-full h-full object-contain opacity-0 transition-opacity duration-700 z-20 p-6 sm:p-10 drop-shadow-[0_15px_40px_rgba(0,0,0,0.9)]" onload="this.classList.remove('opacity-0'); this.previousElementSibling.classList.add('opacity-0');">
+					<div data-smart-pair class="absolute inset-0 w-full h-full z-10">
+						<img data-smart-role="low" data-smart-src="${lowResUrl}" class="absolute w-full h-full object-contain blur-md z-10 p-6 sm:p-10 drop-shadow-[0_15px_40px_rgba(0,0,0,0.9)]">
+						<img data-smart-role="high" data-smart-src="${highResUrl}" class="absolute w-full h-full object-contain opacity-0 transition-opacity duration-700 z-20 p-6 sm:p-10 drop-shadow-[0_15px_40px_rgba(0,0,0,0.9)]">
+					</div>
                 </a>
 
                 ${hasMultiple ? `
@@ -796,6 +1107,8 @@ function renderCertificates(posts) {
 	});
 
 	bindSwiperPauseOnHover(certSwiper);
+
+	registerSmartImagesInContainer(carouselWrapper);
 
 	refreshLightbox();
 	initAnimeScroll();
@@ -891,7 +1204,7 @@ function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
 		let slideHTML = `
             <div class="swiper-slide w-[280px] sm:w-[360px] lg:w-[400px] aspect-[4/3] flex justify-center items-center relative overflow-hidden bg-[#11121a] shadow-[0_0_20px_black] rounded-lg group mx-2 cursor-zoom-in">
                 
-                <img src="${lowResUrl}" class="absolute inset-0 w-full h-full object-cover blur-md opacity-40 scale-110 z-0 transition-transform duration-500 group-hover:scale-125" alt="bg">
+				<img data-smart-role="low-only" data-smart-src="${lowResUrl}" class="absolute inset-0 w-full h-full object-cover blur-md opacity-40 scale-110 z-0 transition-transform duration-500 group-hover:scale-125" alt="bg">
                 <div class="absolute inset-0 bg-black/50 z-0"></div>
                 
                 <div class="absolute bottom-3 left-3 z-40 flex gap-2">
@@ -912,8 +1225,10 @@ function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
                     
                     ${(isVideoUrl || youtubeId) ? `<i class="bi bi-play-circle text-4xl text-white/80 absolute z-30 drop-shadow-[0_0_15px_rgba(0,0,0,0.9)]"></i>` : ''}
                     
-                    <img src="${lowResUrl}" class="absolute w-full h-full object-contain blur-md z-10 p-5 sm:p-8 drop-shadow-[0_15px_40px_rgba(0,0,0,0.9)]">
-                    <img src="${highResUrl}" class="absolute w-full h-full object-contain opacity-0 transition-opacity duration-700 z-20 p-2 sm:p-5 drop-shadow-[0_15px_40px_rgba(0,0,0,0.9)]" onload="this.classList.remove('opacity-0'); this.previousElementSibling.classList.add('opacity-0');">
+					<div data-smart-pair class="absolute inset-0 w-full h-full z-10">
+						<img data-smart-role="low" data-smart-src="${lowResUrl}" class="absolute w-full h-full object-contain blur-md z-10 p-5 sm:p-8 drop-shadow-[0_15px_40px_rgba(0,0,0,0.9)]">
+						<img data-smart-role="high" data-smart-src="${highResUrl}" class="absolute w-full h-full object-contain opacity-0 transition-opacity duration-700 z-20 p-2 sm:p-5 drop-shadow-[0_15px_40px_rgba(0,0,0,0.9)]">
+					</div>
                 </a>
 
                 ${hasMultiple ? `
@@ -970,6 +1285,8 @@ function renderWorks(posts, containerId, swiperVarName, swiperSelector) {
 	});
 
 	bindSwiperPauseOnHover(window[swiperVarName]);
+
+	registerSmartImagesInContainer(wrapper);
 
 	if (typeof refreshLightbox === "function") {
 		refreshLightbox();
