@@ -1,0 +1,9 @@
+@echo off
+echo Compiling bloat_generator.asm...
+nasm -f win64 bloat_generator.asm -o bloat_generator.obj
+echo Linking bloat_generator.obj...
+golink /entry _start bloat_generator.obj kernel32.dll
+echo Running bloat_generator.exe to generate 100,000 assembly files...
+bloat_generator.exe
+echo Done! 100,000 files created in 'bloat' folder.
+pause
